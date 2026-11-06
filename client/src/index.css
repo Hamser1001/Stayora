@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 27% 97%;
+    --foreground: 195 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 195 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 195 20% 12%;
+
+    /* Deep pine — the brand anchor */
+    --primary: 168 52% 16%;
+    --primary-foreground: 40 33% 97%;
+    --primary-soft: 166 26% 93%;
+
+    --secondary: 40 16% 94%;
+    --secondary-foreground: 168 40% 18%;
+
+    --muted: 40 14% 95%;
+    --muted-foreground: 195 9% 44%;
+
+    --accent: 38 44% 94%;
+    --accent-foreground: 32 55% 28%;
+    --accent-soft: 38 60% 96%;
+
+    --gold: 36 63% 52%;
+    --gold-soft: 40 72% 94%;
+
+    --destructive: 2 66% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-soft: 3 70% 96%;
+
+    --border: 40 13% 89%;
+    --input: 40 12% 86%;
+    --ring: 168 40% 30%;
+
+    --sidebar: 168 44% 13%;
+    --sidebar-foreground: 40 30% 96%;
+    --sidebar-muted: 165 12% 68%;
+    --sidebar-accent: 168 34% 20%;
+
+    --status-available: 158 58% 35%;
+    --status-available-soft: 155 48% 93%;
+    --status-occupied: 199 74% 40%;
+    --status-occupied-soft: 198 72% 94%;
+    --status-reserved: 36 78% 44%;
+    --status-reserved-soft: 38 85% 93%;
+    --status-cleaning: 277 44% 52%;
+    --status-cleaning-soft: 275 55% 95%;
+    --status-maintenance: 2 62% 52%;
+    --status-maintenance-soft: 3 70% 95%;
+    --status-inactive: 200 9% 46%;
+    --status-inactive-soft: 200 12% 94%;
+
+    --chart-1: 168 48% 24%;
+    --chart-2: 36 63% 57%;
+    --chart-3: 194 46% 49%;
+    --chart-4: 25 44% 62%;
+    --chart-5: 152 26% 52%;
+
+    --radius: 0.875rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.14);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-[-0.015em];
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring/40 ring-offset-2 ring-offset-background;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator {
+    opacity: 0.45;
+    cursor: pointer;
+  }
+
+  /* Restrained scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply rounded-xl border border-border/80 bg-card shadow-card;
+  }
+
+  .surface-hover {
+    @apply transition-all duration-200 hover:border-border hover:shadow-lift;
+  }
+
+  .label-caps {
+    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground;
+  }
+
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .balance {
+    text-wrap: balance;
+  }
+}

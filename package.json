@@ -1,0 +1,21 @@
+{
+  "name": "stayora",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stayora — modern hostel management platform (MERN)",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace client",
+    "dev:client": "npm run dev --workspace client",
+    "dev:api": "npm run dev --workspace server",
+    "build": "npm run build --workspace client",
+    "preview": "npm run preview --workspace client",
+    "seed": "npm run seed --workspace server"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
