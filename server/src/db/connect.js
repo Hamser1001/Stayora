@@ -1,0 +1,15 @@
+import mongoose from 'mongoose';
+import { env } from '../config/env.js';
+
+mongoose.set('strictQuery', true);
+
+export async function connectDatabase(uri = env.mongoUri) {
+  await mongoose.connect(uri, { serverSelectionTimeoutMS: 8000 });
+  return mongoose.connection;
+}
+
+export async function disconnectDatabase() {
+  await mongoose.disconnect();
+}
+
+export { mongoose };
