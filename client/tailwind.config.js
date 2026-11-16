@@ -53,6 +53,13 @@ export default {
         gold: {
           DEFAULT: 'hsl(var(--gold))',
           soft: 'hsl(var(--gold-soft))',
+          foreground: 'hsl(var(--gold-foreground))',
+          hover: 'hsl(var(--gold-hover))',
+        },
+        overlay: 'hsl(var(--overlay))',
+        brand: {
+          tile: 'hsl(var(--brand-tile))',
+          ink: 'hsl(var(--brand-ink))',
         },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar))',
@@ -90,8 +97,9 @@ export default {
         '2xl': 'calc(var(--radius) + 10px)',
       },
       boxShadow: {
-        card: '0 1px 2px 0 hsl(200 20% 10% / 0.04), 0 8px 24px -16px hsl(200 20% 10% / 0.16)',
-        lift: '0 2px 4px -1px hsl(200 20% 10% / 0.06), 0 16px 40px -24px hsl(200 20% 10% / 0.28)',
+        xs: 'var(--shadow-xs)',
+        card: 'var(--shadow-card)',
+        lift: 'var(--shadow-lift)',
         inset: 'inset 0 1px 0 0 hsl(0 0% 100% / 0.08)',
       },
       keyframes: {

@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { RecordList, RecordRow } from '@/components/common/RecordList';
+import { IconAction } from '@/components/common/IconAction';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import {
@@ -127,16 +128,14 @@ export function StaffPage() {
                     <p className="truncate text-[11px] text-muted-foreground">{member.email}</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="shrink-0 text-destructive disabled:text-muted-foreground/40"
+                <IconAction
+                  variant="destructive-ghost"
+                  icon={Trash2}
+                  label={t('common.delete')}
+                  className="shrink-0"
                   disabled={isOwner}
-                  aria-label={t('common.delete')}
                   onClick={() => setRemoving(member)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                />
               </div>
 
               <div className="flex items-center gap-2">

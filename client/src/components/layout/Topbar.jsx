@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PanelLeft, Search } from 'lucide-react';
+import { Moon, PanelLeft, Search, Sun } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NotificationsMenu } from './NotificationsMenu';
 import { UserMenu } from './UserMenu';
@@ -9,6 +10,7 @@ import { Breadcrumbs } from './Breadcrumbs';
 
 export function Topbar({ onOpenMobileNav }) {
   const { t } = useTranslation();
+  const { resolved, toggle } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export function Topbar({ onOpenMobileNav }) {
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="hidden h-9 w-[240px] items-center gap-2 rounded-lg border border-border bg-card px-3 text-left text-[12.5px] text-muted-foreground/80 shadow-[0_1px_1px_hsl(200_20%_10%/0.02)] transition-colors hover:border-border hover:bg-muted/40 md:flex"
+          className="hidden h-9 w-[240px] items-center gap-2 rounded-lg border border-border bg-card px-3 text-left text-[12.5px] text-muted-foreground/80 shadow-xs transition-colors hover:border-border hover:bg-muted/40 md:flex"
         >
           <Search className="size-3.5 shrink-0" />
           <span className="flex-1 truncate">{t('topbar.searchPlaceholder')}</span>
@@ -60,6 +62,14 @@ export function Topbar({ onOpenMobileNav }) {
         </button>
 
         <div className="flex items-center gap-0.5 sm:gap-1">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={t('common.toggleTheme')}
+            className="grid size-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+          >
+            {resolved === 'dark' ? <Sun className="size-4" strokeWidth={1.9} /> : <Moon className="size-4" strokeWidth={1.9} />}
+          </button>
           <LanguageSwitcher />
           <NotificationsMenu />
           <div className="mx-1 hidden h-5 w-px bg-border sm:block" />

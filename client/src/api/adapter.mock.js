@@ -983,4 +983,56 @@ const mock = {
   },
 };
 
+/* ------------------------- server-driven list contract ------------------------ */
+/* The mock keeps everything in memory, but exposes the same {data, meta} shape. */
+function mockPage(rows, params = {}, counts) {
+  const page = Math.max(1, Number(params.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(params.pageSize) || 12));
+  const start = (page - 1) * pageSize;
+  return {
+    data: rows.slice(start, start + pageSize),
+    meta: {
+      page,
+      pageSize,
+      total: rows.length,
+      pages: Math.max(1, Math.ceil(rows.length / pageSize)),
+      ...(counts ? { counts } : {}),
+    },
+  };
+}
+
+mock.reservations.listPage = async (params = {}) => {
+  const rows = await mock.reservations.list(params);
+  const all = await mock.reservations.list();
+  const today = todayISO();
+  return mockPage(rows, params, {
+    arrivals: all.filter((r) => r.arrival === today && ['confirmed', 'pending'].includes(r.status)).length,
+    departures: all.filter((r) => r.departure === today && r.status === 'checkedIn').length,
+    inHouse: all.filter((r) => r.status === 'checkedIn').length,
+    pending: all.filter((r) => r.status === 'pending').length,
+  });
+};
+
+mock.reservations.outstanding = async () =>
+  (await mock.reservations.list()).filter(
+    (r) => r.balance > 0 && ['pending', 'confirmed', 'checkedIn'].includes(r.status),
+  );
+
+mock.guests.listPage = async (params = {}) => {
+  const rows = await mock.guests.list(params);
+  const all = await mock.guests.list();
+  return mockPage(rows, params, {
+    all: all.length,
+    inHouse: all.filter((g) => g.currentStay).length,
+    upcoming: all.filter((g) => g.upcomingStay).length,
+    balance: all.filter((g) => g.outstanding > 0).length,
+  });
+};
+
+mock.guests.options = async () =>
+  (await mock.guests.list()).map(({ id, name, email, phone }) => ({ id, name, email, phone }));
+
+mock.payments.listPage = async (params = {}) => mockPage(await mock.payments.list(params), params);
+mock.expenses.listPage = async (params = {}) => mockPage(await mock.expenses.list(params), params);
+
 export default mock;

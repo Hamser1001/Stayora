@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Field, Input, Textarea } from '@/components/ui/input';
 import {
   Select,
@@ -120,6 +121,15 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
   const roomId = values.roomId;
   const bedId = values.bedId;
 
+  // Keep the stay valid: moving arrival forward pushes departure with it.
+  useEffect(() => {
+    if (!open || !arrival) return;
+    if (!departure || departure <= arrival) {
+      setValue('departure', addDays(arrival, 1), { shouldValidate: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, arrival]);
+
   const nights = nightsBetween(arrival, departure);
   const total = Math.max(0, nights * (Number(values.rate) || 0) - (Number(values.discount) || 0));
 
@@ -127,7 +137,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
     if (!open) return;
     setError('');
     (async () => {
-      const [guestList, roomList] = await Promise.all([api.guests.list(), api.rooms.list()]);
+      const [guestList, roomList] = await Promise.all([api.guests.options(), api.rooms.list()]);
       setGuests(guestList);
       setRooms(roomList);
       if (reservation) {
@@ -274,7 +284,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
                           className={cn(
                             'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors',
                             field.value === option.key
-                              ? 'bg-card text-foreground shadow-sm'
+                              ? 'bg-primary-soft text-primary'
                               : 'text-muted-foreground hover:text-foreground',
                           )}
                         >
@@ -351,7 +361,19 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t('reservations.arrival')} htmlFor="res-arrival" error={errors.arrival?.message} required>
-                <Input id="res-arrival" type="date" {...register('arrival')} />
+                <Controller
+                  control={control}
+                  name="arrival"
+                  render={({ field }) => (
+                    <DatePicker
+                      id="res-arrival"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      aria-invalid={Boolean(errors.arrival)}
+                    />
+                  )}
+                />
               </Field>
               <Field
                 label={t('reservations.departure')}
@@ -359,7 +381,20 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
                 error={errors.departure?.message}
                 required
               >
-                <Input id="res-departure" type="date" {...register('departure')} />
+                <Controller
+                  control={control}
+                  name="departure"
+                  render={({ field }) => (
+                    <DatePicker
+                      id="res-departure"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      min={arrival}
+                      aria-invalid={Boolean(errors.departure)}
+                    />
+                  )}
+                />
               </Field>
 
               <Field label={t('reservations.form.room')} required error={errors.roomId?.message}>

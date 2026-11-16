@@ -6,15 +6,20 @@ import {
   ArrowRight,
   BellRing,
   Building2,
+  Monitor,
+  Moon,
   Palette,
   RotateCcw,
   Save,
   ShieldAlert,
   Sparkles,
+  Sun,
   Users,
 } from 'lucide-react';
 import { api } from '@/api';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { SegmentedControl, SegmentedOption } from '@/components/ui/segmented';
 import { useApiResource } from '@/hooks/useApiResource';
 import { changeLanguage, SUPPORTED_LANGUAGES } from '@/i18n';
 import { CANCELLATION_POLICIES, CURRENCIES } from '@/lib/constants';
@@ -68,6 +73,7 @@ function SectionCard({ icon: Icon, title, description, children, footer }) {
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { settings, loading, updateSettings, resetSettings } = useSettings();
+  const { mode, setMode } = useTheme();
   const [draft, setDraft] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -148,7 +154,7 @@ export function SettingsPage() {
   const saveButton = (fields) => (
     <Button size="sm" onClick={() => save(fields)} disabled={saving}>
       {saving ? <Spinner /> : <Save className="size-3.5" />}
-      {t('common.saveChanges')}
+      {t('common.save')}
     </Button>
   );
 
@@ -182,7 +188,7 @@ export function SettingsPage() {
             description={t('settings.property.body')}
             footer={saveButton(['name', 'legalName', 'email', 'phone', 'website', 'address', 'city', 'country'])}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
               <Field
                 label={t('settings.property.name')}
                 htmlFor="settings-name"
@@ -256,7 +262,7 @@ export function SettingsPage() {
             description={t('settings.preferences.body')}
             footer={saveButton(['currency', 'timezone'])}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
               <Field
                 label={t('settings.preferences.language')}
                 hint={t('settings.preferences.languageHint')}
@@ -318,9 +324,23 @@ export function SettingsPage() {
                 label={t('settings.preferences.theme')}
                 hint={t('settings.preferences.themeHint')}
               >
-                <div className="flex h-[38px] items-center rounded-lg border border-border bg-muted/40 px-3 text-[12.5px] text-muted-foreground">
-                  {t('settings.preferences.themeLight')}
-                </div>
+                <SegmentedControl className="w-full sm:w-auto">
+                  {[
+                    ['light', t('settings.preferences.themeLight'), Sun],
+                    ['dark', t('settings.preferences.themeDark'), Moon],
+                    ['system', t('settings.preferences.themeSystem'), Monitor],
+                  ].map(([value, label, Icon]) => (
+                    <SegmentedOption
+                      key={value}
+                      icon={Icon}
+                      active={mode === value}
+                      onClick={() => setMode(value)}
+                      className="flex-1 sm:flex-none"
+                    >
+                      {label}
+                    </SegmentedOption>
+                  ))}
+                </SegmentedControl>
               </Field>
             </div>
           </SectionCard>
@@ -340,7 +360,7 @@ export function SettingsPage() {
               'cancellationPolicy',
             ])}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
               <Field
                 label={t('settings.pricing.taxRate')}
                 htmlFor="settings-tax"

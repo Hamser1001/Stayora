@@ -30,6 +30,8 @@
     "reset": "Reset",
     "apply": "Apply",
     "clear": "Clear",
+    "toggleTheme": "Toggle dark mode",
+    "selectDate": "Select a date",
     "filters": "Filters",
     "filter": "Filter",
     "export": "Export",
@@ -145,7 +147,7 @@
     "feature1": "Unified front desk, rooms and billing",
     "feature2": "Live occupancy and revenue insight",
     "feature3": "Role-based access for your whole team",
-    "footer": "Stayora is a demo product experience. Data lives in your browser.",
+    "footer": "Stayora is a demo product experience. Data is stored in MongoDB.",
     "errors": {
       "invalidEmail": "Enter a valid email address.",
       "shortPassword": "Password must be at least 8 characters.",
@@ -204,6 +206,8 @@
     "today": "Today",
     "tomorrow": "Tomorrow",
     "yesterday": "Yesterday",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "arrival": "Arrival",
@@ -847,8 +851,9 @@
       "dateFormat": "Date format",
       "theme": "Appearance",
       "themeLight": "Light",
+      "themeDark": "Dark",
       "themeSystem": "System",
-      "themeHint": "Stayora is optimised for light mode."
+      "themeHint": "Pick a theme or follow your device."
     },
     "pricing": {
       "title": "Pricing & policy",

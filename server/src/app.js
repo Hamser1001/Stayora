@@ -5,7 +5,9 @@ import authRouter from './routes/auth.js';
 import reservationsRouter from './routes/reservations.js';
 import { roomsRouter, bedsRouter, guestsRouter } from './routes/inventory.js';
 import { paymentsRouter, expensesRouter } from './routes/finance.js';
-import { housekeepingRouter, staffRouter } from './routes/operations.js';
+import { housekeepingRouter } from './routes/operations.js';
+import staffRouter from './routes/staff.js';
+import dataRouter from './routes/data.js';
 import {
   dashboardRouter,
   notificationsRouter,
@@ -13,6 +15,7 @@ import {
   settingsRouter,
 } from './routes/insights.js';
 import { errorHandler, notFound } from './middleware/error.js';
+import { invalidate } from './services/cache.js';
 
 export function createApp() {
   const app = express();
@@ -28,7 +31,14 @@ export function createApp() {
       credentials: true,
     }),
   );
-  app.use(express.json({ limit: '1mb' }));
+  // Excel imports are sent as base64 in the JSON body.
+  app.use(express.json({ limit: '12mb' }));
+
+  // Any mutation invalidates the short-lived read caches (counters, analytics).
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') invalidate();
+    next();
+  });
 
   app.get('/api/health', (req, res) => {
     res.json({ data: { status: 'ok', uptime: process.uptime() } });
@@ -47,6 +57,7 @@ export function createApp() {
   app.use('/api/reports', reportsRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/notifications', notificationsRouter);
+  app.use('/api/data', dataRouter);
 
   app.use(notFound);
   app.use(errorHandler);

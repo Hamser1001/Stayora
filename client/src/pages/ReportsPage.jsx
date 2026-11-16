@@ -330,7 +330,7 @@ export function ReportsPage() {
         <div className="space-y-4 xl:col-span-5">
           <Card className="p-4">
             <div className="flex items-start gap-2.5">
-              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-gold-soft text-[hsl(32_60%_32%)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-gold-soft text-gold-foreground">
                 <Lightbulb className="size-4" strokeWidth={1.9} />
               </span>
               <div className="min-w-0">

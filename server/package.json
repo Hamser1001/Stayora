@@ -8,7 +8,12 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "seed:large": "node scripts/seed-large.js",
+    "loadtest": "node scripts/load-test.js",
+    "audit:queries": "node scripts/audit-queries.js",
+    "smoke": "node scripts/smoke.js",
+    "profile:analytics": "node scripts/profile-analytics.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -16,6 +21,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.5"
+    "mongoose": "^8.9.5",
+    "xlsx": "^0.18.5"
   }
 }

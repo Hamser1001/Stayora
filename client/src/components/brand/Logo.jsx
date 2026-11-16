@@ -4,7 +4,7 @@ export function LogoMark({ className }) {
   return (
     <span
       className={cn(
-        'relative grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#f6efe3] text-[#0f3e36] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]',
+        'relative grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-tile text-brand-ink shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]',
         className,
       )}
       aria-hidden
@@ -17,7 +17,7 @@ export function LogoMark({ className }) {
           strokeLinecap="round"
         />
         <path d="M6 18.5h14.5M15 11v7.5" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-        <circle cx="24.5" cy="24" r="2.2" fill="#c99a45" />
+        <circle cx="24.5" cy="24" r="2.2" fill="hsl(var(--gold))" />
       </svg>
     </span>
   );

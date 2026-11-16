@@ -30,6 +30,8 @@
     "reset": "Réinitialiser",
     "apply": "Appliquer",
     "clear": "Effacer",
+    "toggleTheme": "Basculer le mode sombre",
+    "selectDate": "Choisir une date",
     "filters": "Filtres",
     "filter": "Filtrer",
     "export": "Exporter",
@@ -145,7 +147,7 @@
     "feature1": "Réception, chambres et facturation réunies",
     "feature2": "Occupation et revenus en temps réel",
     "feature3": "Accès par rôle pour toute l'équipe",
-    "footer": "Stayora est une démonstration produit. Les données restent dans votre navigateur.",
+    "footer": "Stayora est une démonstration produit. Les données sont stockées dans MongoDB.",
     "errors": {
       "invalidEmail": "Saisissez une adresse e-mail valide.",
       "shortPassword": "Le mot de passe doit contenir au moins 8 caractères.",
@@ -204,6 +206,8 @@
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
     "yesterday": "Hier",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
     "checkIn": "Arrivée",
     "checkOut": "Départ",
     "arrival": "Arrivée",
@@ -847,8 +851,9 @@
       "dateFormat": "Format de date",
       "theme": "Apparence",
       "themeLight": "Clair",
+      "themeDark": "Sombre",
       "themeSystem": "Système",
-      "themeHint": "Stayora est optimisé pour le mode clair."
+      "themeHint": "Choisissez un thème ou suivez votre appareil."
     },
     "pricing": {
       "title": "Tarifs & règles",

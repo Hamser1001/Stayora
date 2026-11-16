@@ -1,37 +1,73 @@
 import { Router } from 'express';
 import { models } from '../db/models.js';
-import { loadSnapshot, nextId } from '../services/snapshot.js';
-import { bedStatus, enrichGuest, enrichRoom } from '../services/selectors.js';
-import { todayISO } from '../lib/dates.js';
+import { guestCounts, guestPage, hydrateGuests } from '../services/listing.js';
+import { paged } from '../services/paging.js';
+import { nextIdFor } from '../services/snapshot.js';
+import { bedStatus, enrichRoom } from '../services/selectors.js';
+import { addDays, todayISO } from '../lib/dates.js';
+import { memo } from '../services/cache.js';
 import { asyncHandler, fail } from '../middleware/error.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 
 const BLOCKING_STATUSES = ['confirmed', 'checkedIn', 'pending'];
+
+/**
+ * Reservations that can still influence a bed's displayed status: today's
+ * occupancy plus the next arrivals, not every future booking.
+ */
+function loadLiveReservations() {
+  const today = todayISO();
+  return memo(`rooms:live:${today}`, 4000, () =>
+    models.Reservation.find({
+      status: { $in: BLOCKING_STATUSES },
+      departure: { $gt: today },
+      arrival: { $lte: addDays(today, 45) },
+    }).lean(),
+  );
+}
+
+async function roomReadModel(roomIds) {
+  const rooms = await models.Room.find(roomIds ? { id: { $in: roomIds } } : {}).lean();
+  const [beds, reservations] = await Promise.all([
+    models.Bed.find(roomIds ? { roomId: { $in: roomIds } } : {}).lean(),
+    loadLiveReservations(),
+  ]);
+  const guestIds = [...new Set(reservations.map((reservation) => reservation.guestId))];
+  const guests = await models.Guest.find({ id: { $in: guestIds } }, { id: 1, name: 1, _id: 0 }).lean();
+  return { rooms, beds, reservations, guests, payments: [] };
+}
 
 /* ---------------------------------- Rooms --------------------------------- */
 
 export const roomsRouter = Router();
 
+roomsRouter.use(requirePermission('rooms'));
+
 roomsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const db = await loadSnapshot();
     const { search, type, floor, status } = req.query;
-    let rooms = db.rooms.map((room) => enrichRoom(room, db));
+    const filter = {};
+    if (type && type !== 'all') filter.type = String(type);
+    if (floor !== undefined && floor !== 'all') filter.floor = Number(floor);
+    const term = String(search || '').trim();
+    if (term) {
+      const rx = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ number: rx }, { type: rx }];
+    }
 
-    if (search) {
-      const term = String(search).toLowerCase();
-      rooms = rooms.filter(
-        (room) => room.number.toLowerCase().includes(term) || room.type.toLowerCase().includes(term),
-      );
-    }
-    if (type && type !== 'all') rooms = rooms.filter((room) => room.type === type);
-    if (floor !== undefined && floor !== 'all') {
-      rooms = rooms.filter((room) => room.floor === Number(floor));
-    }
-    if (status && status !== 'all') {
-      rooms = rooms.filter((room) => room.beds.some((bed) => bed.status === status));
-    }
+    const db = await roomReadModel();
+    db.rooms = db.rooms.filter((room) => {
+      if (filter.type && room.type !== filter.type) return false;
+      if (Number.isFinite(filter.floor) && room.floor !== filter.floor) return false;
+      if (term && !room.number.toLowerCase().includes(term.toLowerCase()) && !room.type.toLowerCase().includes(term.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+
+    let rooms = db.rooms.map((room) => enrichRoom(room, db));
+    if (status && status !== 'all') rooms = rooms.filter((room) => room.beds.some((bed) => bed.status === status));
 
     rooms.sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
     res.json({ data: rooms });
@@ -41,8 +77,8 @@ roomsRouter.get(
 roomsRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const db = await loadSnapshot();
-    const room = db.rooms.find((item) => item.id === req.params.id);
+    const db = await roomReadModel([req.params.id]);
+    const room = db.rooms[0];
     if (!room) fail('Room not found.', 'NOT_FOUND', 404);
     res.json({ data: enrichRoom(room, db) });
   }),
@@ -53,15 +89,15 @@ roomsRouter.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
-    const snapshot = await loadSnapshot();
     const number = String(payload.number || '').trim();
     if (!number) fail('Enter a room number.', 'VALIDATION_ERROR');
-    if (snapshot.rooms.some((room) => room.number.toLowerCase() === number.toLowerCase())) {
-      fail('That room number already exists.', 'DUPLICATE_ROOM');
-    }
+    const existing = await models.Room.findOne({ number: new RegExp(`^${number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') })
+      .select({ id: 1 })
+      .lean();
+    if (existing) fail('That room number already exists.', 'DUPLICATE_ROOM');
 
     const room = await models.Room.create({
-      id: nextId('rom', snapshot.rooms),
+      id: await nextIdFor('room', models.Room),
       number,
       type: payload.type || 'dorm',
       audience: payload.audience || 'mixed',
@@ -85,8 +121,8 @@ roomsRouter.post(
     }));
     if (beds.length) await models.Bed.insertMany(beds);
 
-    const db = await loadSnapshot();
-    res.status(201).json({ data: enrichRoom(db.rooms.find((item) => item.id === room.id), db) });
+    const db = await roomReadModel([room.id]);
+    res.status(201).json({ data: enrichRoom(db.rooms[0], db) });
   }),
 );
 
@@ -95,30 +131,29 @@ roomsRouter.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const payload = req.body || {};
-    const snapshot = await loadSnapshot();
-    const room = snapshot.rooms.find((item) => item.id === req.params.id);
+    const room = await models.Room.findOne({ id: req.params.id }).lean();
     if (!room) fail('Room not found.', 'NOT_FOUND', 404);
 
     const number = String(payload.number ?? room.number).trim();
-    if (
-      snapshot.rooms.some(
-        (item) => item.id !== room.id && item.number.toLowerCase() === number.toLowerCase(),
-      )
-    ) {
-      fail('That room number already exists.', 'DUPLICATE_ROOM');
-    }
+    const duplicate = await models.Room.findOne({
+      id: { $ne: room.id },
+      number: new RegExp(`^${number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+    })
+      .select({ id: 1 })
+      .lean();
+    if (duplicate) fail('That room number already exists.', 'DUPLICATE_ROOM');
 
-    const roomBeds = snapshot.beds.filter((bed) => bed.roomId === room.id);
+    const roomBeds = await models.Bed.find({ roomId: room.id }).sort({ number: 1 }).lean();
     const nextBedCount = Number(payload.bedCount ?? room.bedCount);
 
     if (nextBedCount < roomBeds.length) {
       const removable = roomBeds.slice(nextBedCount);
-      const blocked = removable.find((bed) =>
-        snapshot.reservations.some(
-          (reservation) =>
-            reservation.bedId === bed.id && BLOCKING_STATUSES.includes(reservation.status),
-        ),
-      );
+      const blocked = await models.Reservation.findOne({
+        bedId: { $in: removable.map((bed) => bed.id) },
+        status: { $in: BLOCKING_STATUSES },
+      })
+        .select({ id: 1 })
+        .lean();
       if (blocked) fail('Beds with active reservations cannot be removed.', 'BED_HAS_ACTIVE_RESERVATION');
       await models.Bed.deleteMany({ id: { $in: removable.map((bed) => bed.id) } });
     }
@@ -153,9 +188,12 @@ roomsRouter.patch(
         notes: payload.notes ?? room.notes,
       },
     );
+    if (number !== room.number) {
+      await models.Reservation.updateMany({ roomId: room.id }, { roomNumber: number });
+    }
 
-    const db = await loadSnapshot();
-    res.json({ data: enrichRoom(db.rooms.find((item) => item.id === room.id), db) });
+    const db = await roomReadModel([room.id]);
+    res.json({ data: enrichRoom(db.rooms[0], db) });
   }),
 );
 
@@ -163,21 +201,18 @@ roomsRouter.delete(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const snapshot = await loadSnapshot();
-    const room = snapshot.rooms.find((item) => item.id === req.params.id);
+    const room = await models.Room.findOne({ id: req.params.id }).lean();
     if (!room) fail('Room not found.', 'NOT_FOUND', 404);
 
-    const bedIds = snapshot.beds.filter((bed) => bed.roomId === room.id).map((bed) => bed.id);
-    const active = snapshot.reservations.some(
-      (reservation) =>
-        bedIds.includes(reservation.bedId) && BLOCKING_STATUSES.includes(reservation.status),
-    );
+    const active = await models.Reservation.findOne({
+      roomId: room.id,
+      status: { $in: BLOCKING_STATUSES },
+    })
+      .select({ id: 1 })
+      .lean();
     if (active) fail('This room has active reservations and cannot be deleted.', 'ROOM_HAS_ACTIVE_RESERVATIONS');
 
-    const reservationIds = snapshot.reservations
-      .filter((reservation) => reservation.roomId === room.id)
-      .map((reservation) => reservation.id);
-
+    const reservationIds = await models.Reservation.distinct('id', { roomId: room.id });
     await Promise.all([
       models.Payment.deleteMany({ reservationId: { $in: reservationIds } }),
       models.Reservation.deleteMany({ roomId: room.id }),
@@ -194,18 +229,19 @@ roomsRouter.delete(
 
 export const bedsRouter = Router();
 
+bedsRouter.use(requirePermission('rooms'));
+
 bedsRouter.patch(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
     const patch = req.body || {};
-    const db = await loadSnapshot();
-    const bed = db.beds.find((item) => item.id === req.params.id);
+    const bed = await models.Bed.findOne({ id: req.params.id }).lean();
     if (!bed) fail('Bed not found.', 'NOT_FOUND', 404);
 
-    const occupied = db.reservations.some(
-      (reservation) => reservation.bedId === bed.id && reservation.status === 'checkedIn',
-    );
+    const occupied = await models.Reservation.findOne({ bedId: bed.id, status: 'checkedIn' })
+      .select({ id: 1 })
+      .lean();
     if (occupied && patch.status && patch.status !== 'occupied') {
       fail('Check the guest out before changing this bed.', 'BED_OCCUPIED');
     }
@@ -243,11 +279,14 @@ bedsRouter.patch(
       },
     );
 
-    const fresh = await loadSnapshot();
-    const updated = fresh.beds.find((item) => item.id === bed.id);
-    const room = fresh.rooms.find((item) => item.id === bed.roomId);
+    const db = await roomReadModel([bed.roomId]);
+    const updatedBed = db.beds.find((item) => item.id === bed.id);
     res.json({
-      data: { ...updated, status: bedStatus(updated, fresh), room: enrichRoom(room, fresh) },
+      data: {
+        ...updatedBed,
+        status: bedStatus(updatedBed, db),
+        room: enrichRoom(db.rooms[0], db),
+      },
     });
   }),
 );
@@ -256,27 +295,30 @@ bedsRouter.patch(
 
 export const guestsRouter = Router();
 
+guestsRouter.use(requirePermission('guests'));
+
 guestsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const db = await loadSnapshot();
-    const { search, filter } = req.query;
-    let guests = db.guests.map((guest) => enrichGuest(guest, db));
+    const { rows, total, paging } = await guestPage(req.query);
+    const counts = await guestCounts();
+    res.json(paged(rows, { ...paging, total, counts }));
+  }),
+);
 
-    if (search) {
-      const term = String(search).toLowerCase();
-      guests = guests.filter(
-        (guest) =>
-          guest.name.toLowerCase().includes(term) ||
-          guest.email.toLowerCase().includes(term) ||
-          guest.phone.includes(term),
-      );
-    }
-    if (filter === 'inHouse') guests = guests.filter((guest) => guest.currentStay);
-    if (filter === 'upcoming') guests = guests.filter((guest) => guest.upcomingStay);
-    if (filter === 'balance') guests = guests.filter((guest) => guest.outstanding > 0);
-
-    guests.sort((a, b) => a.name.localeCompare(b.name));
+/** Lightweight option list for pickers — projected fields only, capped. */
+guestsRouter.get(
+  '/options',
+  asyncHandler(async (req, res) => {
+    const limit = Math.min(2000, Math.max(1, Number.parseInt(req.query.limit, 10) || 2000));
+    const term = String(req.query.search || '').trim();
+    const filter = term
+      ? { name: new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
+      : {};
+    const guests = await models.Guest.find(filter, { id: 1, name: 1, email: 1, phone: 1, _id: 0 })
+      .sort({ name: 1 })
+      .limit(limit)
+      .lean();
     res.json({ data: guests });
   }),
 );
@@ -284,10 +326,10 @@ guestsRouter.get(
 guestsRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const db = await loadSnapshot();
-    const guest = db.guests.find((item) => item.id === req.params.id);
+    const guest = await models.Guest.findOne({ id: req.params.id }).lean();
     if (!guest) fail('Guest not found.', 'NOT_FOUND', 404);
-    res.json({ data: enrichGuest(guest, db) });
+    const [enriched] = await hydrateGuests([guest]);
+    res.json({ data: enriched });
   }),
 );
 
@@ -299,9 +341,8 @@ guestsRouter.post(
     const name = String(payload.name || '').trim();
     if (!name) fail('Guest name is required.', 'VALIDATION_ERROR');
 
-    const db = await loadSnapshot();
     const guest = await models.Guest.create({
-      id: nextId('gst', db.guests),
+      id: await nextIdFor('guest', models.Guest),
       name,
       email: payload.email || '',
       phone: payload.phone || '',
@@ -312,8 +353,8 @@ guestsRouter.post(
       createdAt: todayISO(),
     });
 
-    const fresh = await loadSnapshot();
-    res.status(201).json({ data: enrichGuest(fresh.guests.find((item) => item.id === guest.id), fresh) });
+    const [enriched] = await hydrateGuests([guest.toObject()]);
+    res.status(201).json({ data: enriched });
   }),
 );
 
@@ -321,8 +362,7 @@ guestsRouter.patch(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const db = await loadSnapshot();
-    const guest = db.guests.find((item) => item.id === req.params.id);
+    const guest = await models.Guest.findOne({ id: req.params.id }).lean();
     if (!guest) fail('Guest not found.', 'NOT_FOUND', 404);
 
     const allowed = ['name', 'email', 'phone', 'nationality', 'idType', 'idNumber', 'notes'];
@@ -331,7 +371,15 @@ guestsRouter.patch(
     );
     await models.Guest.updateOne({ id: guest.id }, patch);
 
-    const fresh = await loadSnapshot();
-    res.json({ data: enrichGuest(fresh.guests.find((item) => item.id === guest.id), fresh) });
+    if (patch.name && patch.name !== guest.name) {
+      await Promise.all([
+        models.Reservation.updateMany({ guestId: guest.id }, { guestName: patch.name }),
+        models.Payment.updateMany({ guestId: guest.id }, { guestName: patch.name }),
+      ]);
+    }
+
+    const updated = await models.Guest.findOne({ id: guest.id }).lean();
+    const [enriched] = await hydrateGuests([updated]);
+    res.json({ data: enriched });
   }),
 );

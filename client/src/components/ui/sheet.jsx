@@ -10,7 +10,7 @@ const SheetClose = SheetPrimitive.Close;
 const SheetContent = React.forwardRef(
   ({ className, children, side = 'right', ...props }, ref) => (
     <SheetPrimitive.Portal>
-      <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-[hsl(195_25%_10%/0.38)] backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+      <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
       <SheetPrimitive.Content
         ref={ref}
         className={cn(

@@ -111,6 +111,12 @@ export function previousRange(start, end) {
   return { start: addDays(start, -length), end: addDays(start, -1) };
 }
 
+/** First day of the month containing an ISO date string. */
+export function monthStart(value) {
+  const date = parseDate(value) || new Date();
+  return toISODate(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
 export function startOfMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }

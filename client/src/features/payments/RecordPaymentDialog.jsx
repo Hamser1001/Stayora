@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Field, Input, Textarea } from '@/components/ui/input';
 import {
   Select,
@@ -72,10 +73,8 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
     if (!open) return;
     setError('');
     (async () => {
-      const list = await api.reservations.list({});
-      const candidates = list.filter(
-        (item) => item.balance > 0 && ['pending', 'confirmed', 'checkedIn'].includes(item.status),
-      );
+      const list = await api.reservations.outstanding();
+      const candidates = list.filter((item) => item.balance > 0);
       setReservations(candidates);
       if (reservation) {
         reset({
@@ -212,7 +211,19 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
               />
             </Field>
             <Field label={t('payments.date')} htmlFor="pay-date" required error={errors.date?.message}>
-              <Input id="pay-date" type="date" {...register('date')} />
+              <Controller
+                control={control}
+                name="date"
+                render={({ field }) => (
+                  <DatePicker
+                    id="pay-date"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(errors.date)}
+                  />
+                )}
+              />
             </Field>
             <Field label={t('payments.reference')} htmlFor="pay-ref">
               <Input id="pay-ref" placeholder="PMT-00000" {...register('reference')} />

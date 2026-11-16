@@ -139,7 +139,6 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
             <Field
               label={t('rooms.roomNumber')}
               htmlFor="room-number"
-              hint={t('rooms.form.roomNumberHint')}
               error={errors.number?.message}
               required
             >
@@ -202,7 +201,6 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
             <Field
               label={t('rooms.bedCount')}
               htmlFor="room-beds"
-              hint={t('rooms.form.bedsHint')}
               error={errors.bedCount?.message}
               required
             >
@@ -222,7 +220,6 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
             <Field
               label={t('rooms.pricePerBed')}
               htmlFor="room-price"
-              hint={t('rooms.form.priceHint')}
               error={errors.pricePerBed?.message}
               required
             >

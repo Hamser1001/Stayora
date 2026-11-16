@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { SegmentedControl, SegmentedOption } from '@/components/ui/segmented';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -101,26 +102,16 @@ export function HousekeepingPage() {
         }
         actions={
           <>
-            <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+            <SegmentedControl>
               {[
                 ['all', t('housekeeping.filterAll')],
                 ['mine', t('housekeeping.filterMine')],
               ].map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setFilter(key)}
-                  className={cn(
-                    'rounded-md px-2.5 py-1.5 text-[11.5px] font-medium transition-colors',
-                    filter === key
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  )}
-                >
+                <SegmentedOption key={key} active={filter === key} onClick={() => setFilter(key)}>
                   {label}
-                </button>
+                </SegmentedOption>
               ))}
-            </div>
+            </SegmentedControl>
             <Button size="sm" onClick={() => setFormOpen(true)}>
               <Plus className="size-4" />
               {t('housekeeping.newTask')}
@@ -165,7 +156,7 @@ export function HousekeepingPage() {
                   return (
                     <div
                       key={task.id}
-                      className="rounded-lg border border-border bg-card p-3 shadow-[0_1px_1px_hsl(200_20%_10%/0.02)] transition-colors hover:border-border"
+                      className="rounded-lg border border-border bg-card p-3 shadow-xs transition-colors hover:border-border"
                     >
                       <div className="flex items-start gap-2">
                         <span className="grid size-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">

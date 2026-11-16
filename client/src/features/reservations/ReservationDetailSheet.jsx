@@ -146,7 +146,7 @@ export function ReservationDetailSheet({
                 <StatusBadge status={reservation.paymentStatus} />
                 {reservation.balance > 0 &&
                 ['pending', 'confirmed', 'checkedIn'].includes(reservation.status) ? (
-                  <Button size="xs" variant="subtle" onClick={() => onRecordPayment(reservation)}>
+                  <Button size="xs" variant="outline" onClick={() => onRecordPayment(reservation)}>
                     <CreditCard className="size-3.5" />
                     {t('reservations.recordPayment')}
                   </Button>
@@ -223,25 +223,23 @@ export function ReservationDetailSheet({
               </Button>
             ) : null}
             {['pending', 'confirmed'].includes(reservation.status) ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="justify-start text-muted-foreground"
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/70 pt-2.5">
+                <button
+                  type="button"
                   onClick={() => setConfirming('noShow')}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                 >
-                  <UserX className="size-3.5" />
+                  <UserX className="size-3.5 shrink-0" />
                   {t('reservations.noShow')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive-ghost"
-                  className="justify-start"
+                </button>
+                <button
+                  type="button"
                   onClick={() => setConfirming('cancelled')}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md py-1 text-[12px] font-medium text-destructive transition-colors hover:text-destructive/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                 >
-                  <XCircle className="size-3.5" />
+                  <XCircle className="size-3.5 shrink-0" />
                   {t('reservations.cancel')}
-                </Button>
+                </button>
               </div>
             ) : null}
             {busy ? (

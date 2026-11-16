@@ -43,7 +43,7 @@ export function GuestProfileSheet({ guest, onOpenChange, onEdit, onSelectReserva
               </SheetDescription>
             </div>
             {guest.returning ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/30 bg-gold-soft px-2 py-0.5 text-[10px] font-semibold text-[hsl(32_60%_32%)]">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/30 bg-gold-soft px-2 py-0.5 text-[10px] font-semibold text-gold-foreground">
                 <Sparkles className="size-2.5" />
                 {t('guests.vip')}
               </span>

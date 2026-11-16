@@ -21,6 +21,8 @@ import { RoomCard } from '@/features/rooms/RoomCard';
 import { RoomFormDialog } from '@/features/rooms/RoomFormDialog';
 import { BedDetailsDialog } from '@/features/rooms/BedDetailsDialog';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { SegmentedControl, SegmentedOption } from '@/components/ui/segmented';
+import { IconAction } from '@/components/common/IconAction';
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -162,30 +164,22 @@ export function RoomsPage() {
         subtitle={t('rooms.subtitle')}
         actions={
           <>
-            <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
-              <button
-                type="button"
+            <SegmentedControl>
+              <SegmentedOption
+                iconOnly
+                icon={Grid2X2}
+                active={view === 'grid'}
                 onClick={() => setView('grid')}
-                className={cn(
-                  'grid size-8 place-items-center rounded-md transition-colors',
-                  view === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
-                )}
                 aria-label={t('rooms.gridView')}
-              >
-                <Grid2X2 className="size-3.5" />
-              </button>
-              <button
-                type="button"
+              />
+              <SegmentedOption
+                iconOnly
+                icon={List}
+                active={view === 'list'}
                 onClick={() => setView('list')}
-                className={cn(
-                  'grid size-8 place-items-center rounded-md transition-colors',
-                  view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
-                )}
                 aria-label={t('rooms.listView')}
-              >
-                <List className="size-3.5" />
-              </button>
-            </div>
+              />
+            </SegmentedControl>
             <Button size="sm" onClick={openCreate}>
               <Plus className="size-4" />
               {t('rooms.addRoom')}
@@ -398,30 +392,24 @@ export function RoomsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
+                      <IconAction
+                        icon={Pencil}
+                        label={t('rooms.editRoom')}
                         onClick={(event) => {
                           event.stopPropagation();
                           setEditing(room);
                           setFormOpen(true);
                         }}
-                        aria-label={t('rooms.editRoom')}
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-destructive"
+                      />
+                      <IconAction
+                        variant="destructive-ghost"
+                        icon={Trash2}
+                        label={t('common.delete')}
                         onClick={(event) => {
                           event.stopPropagation();
                           setDeleting(room);
                         }}
-                        aria-label={t('common.delete')}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

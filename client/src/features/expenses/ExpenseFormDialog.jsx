@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Field, Input, Textarea } from '@/components/ui/input';
 import {
   Select,
@@ -132,7 +133,19 @@ export function ExpenseFormDialog({ open, onOpenChange, onSaved, defaultCategory
               />
             </Field>
             <Field label={t('expenses.date')} htmlFor="expense-date" error={errors.date?.message} required>
-              <Input id="expense-date" type="date" {...register('date')} />
+              <Controller
+                control={control}
+                name="date"
+                render={({ field }) => (
+                  <DatePicker
+                    id="expense-date"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(errors.date)}
+                  />
+                )}
+              />
             </Field>
             <Field label={t('expenses.amount')} htmlFor="expense-amount" error={errors.amount?.message} required>
               <Input id="expense-amount" type="number" min={0} step="0.01" {...register('amount')} />

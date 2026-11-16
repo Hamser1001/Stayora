@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Field, Input, Textarea } from '@/components/ui/input';
 import {
   Select,
@@ -202,7 +203,19 @@ export function TaskFormDialog({ open, onOpenChange, onSaved }) {
               />
             </Field>
             <Field label={t('housekeeping.due')} htmlFor="task-due" error={errors.due?.message} required>
-              <Input id="task-due" type="date" {...register('due')} />
+              <Controller
+                control={control}
+                name="due"
+                render={({ field }) => (
+                  <DatePicker
+                    id="task-due"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(errors.due)}
+                  />
+                )}
+              />
             </Field>
           </div>
 

@@ -1,0 +1,230 @@
+{
+  "base": "http://localhost:4000/api",
+  "requests": 150,
+  "concurrency": 20,
+  "generatedAt": "2026-11-16T21:50:37.131Z",
+  "results": [
+    {
+      "scenario": "reservations list (page 1)",
+      "endpoint": "/reservations?page=1&pageSize=12",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 34.2,
+      "p50": 481,
+      "p95": 920,
+      "p99": 1841,
+      "max": 1846,
+      "avgKb": 13.4,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "reservations search",
+      "endpoint": "/reservations?page=1&pageSize=12&search=STY&status=confirmed&sort=arrival&direction=desc",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 38.7,
+      "p50": 495,
+      "p95": 898,
+      "p99": 1013,
+      "max": 1410,
+      "avgKb": 13.3,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "guests list",
+      "endpoint": "/guests?page=1&pageSize=12&sort=name",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 51.5,
+      "p50": 149,
+      "p95": 836,
+      "p99": 884,
+      "max": 899,
+      "avgKb": 30.9,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "payments list",
+      "endpoint": "/payments?page=1&pageSize=25&from=2026-11-01&to=2026-11-16",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 52.1,
+      "p50": 77,
+      "p95": 900,
+      "p99": 1077,
+      "max": 1084,
+      "avgKb": 8.2,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "expenses list",
+      "endpoint": "/expenses?page=1&pageSize=25&from=2026-11-01&to=2026-11-16",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 49.5,
+      "p50": 66,
+      "p95": 902,
+      "p99": 1858,
+      "max": 1891,
+      "avgKb": 1.4,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "dashboard",
+      "endpoint": "/dashboard?start=2026-11-01&end=2026-11-16",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 32,
+      "p50": 603,
+      "p95": 724,
+      "p99": 888,
+      "max": 892,
+      "avgKb": 26,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "reports",
+      "endpoint": "/reports?start=2026-11-01&end=2026-11-16",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 51.9,
+      "p50": 390,
+      "p95": 483,
+      "p99": 545,
+      "max": 545,
+      "avgKb": 3.1,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "rooms",
+      "endpoint": "/rooms",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 22.4,
+      "p50": 964,
+      "p95": 1038,
+      "p99": 1054,
+      "max": 1063,
+      "avgKb": 93.2,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "calendar (month)",
+      "endpoint": "/reservations/calendar?start=2026-11-01&end=2026-11-16",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 28.9,
+      "p50": 816,
+      "p95": 941,
+      "p99": 967,
+      "max": 980,
+      "avgKb": 367.7,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "notifications",
+      "endpoint": "/notifications",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 162.3,
+      "p50": 56,
+      "p95": 537,
+      "p99": 545,
+      "max": 545,
+      "avgKb": 8.1,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "settings",
+      "endpoint": "/settings",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 83.9,
+      "p50": 55,
+      "p95": 780,
+      "p99": 797,
+      "max": 798,
+      "avgKb": 0.5,
+      "failures": 0,
+      "statuses": {
+        "200": 150
+      }
+    },
+    {
+      "scenario": "mixed browsing",
+      "requests": 150,
+      "concurrency": 20,
+      "rps": 33.3,
+      "p50": 574,
+      "p95": 1228,
+      "p99": 1723,
+      "max": 1770,
+      "avgKb": 29.1,
+      "failures": 0
+    }
+  ],
+  "stress": [
+    {
+      "concurrency": 10,
+      "rps": 36.1,
+      "p50": 148,
+      "p95": 713,
+      "p99": 1034,
+      "singleEndpointRps": 37.3
+    },
+    {
+      "concurrency": 25,
+      "rps": 38.1,
+      "p50": 700,
+      "p95": 1129,
+      "p99": 1687,
+      "singleEndpointRps": 33.7
+    },
+    {
+      "concurrency": 50,
+      "rps": 40.4,
+      "p50": 1001,
+      "p95": 2678,
+      "p99": 2928,
+      "singleEndpointRps": 42.1
+    },
+    {
+      "concurrency": 100,
+      "rps": 45.4,
+      "p50": 1921,
+      "p95": 3995,
+      "p99": 4856,
+      "singleEndpointRps": 43.7
+    }
+  ]
+}

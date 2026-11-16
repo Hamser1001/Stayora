@@ -131,7 +131,7 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
           <NavLink
             to="/reservations?new=1"
             onClick={onNavigate}
-            className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg bg-gold px-3 py-2.5 text-[13px] font-semibold text-[#241a08] shadow-[0_6px_18px_-10px_rgba(201,154,69,0.9)] transition-all hover:bg-[#d8a959] active:translate-y-px"
+            className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg bg-gold px-3 py-2.5 text-[13px] font-semibold text-brand-ink shadow-[0_6px_18px_-10px_rgba(201,154,69,0.9)] transition-all hover:bg-gold-hover active:translate-y-px"
           >
             <Plus className="size-4" strokeWidth={2.4} />
             {t('dashboard.newReservation')}
@@ -141,7 +141,7 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
             <TooltipTrigger asChild>
               <NavLink
                 to="/reservations?new=1"
-                className="mx-auto mb-5 flex size-9 items-center justify-center rounded-lg bg-gold text-[#241a08] transition-colors hover:bg-[#d8a959]"
+                className="mx-auto mb-5 flex size-9 items-center justify-center rounded-lg bg-gold text-brand-ink transition-colors hover:bg-gold-hover"
               >
                 <Plus className="size-4" strokeWidth={2.4} />
               </NavLink>

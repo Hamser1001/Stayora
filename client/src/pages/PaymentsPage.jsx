@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Banknote, Clock, CreditCard, Landmark, ReceiptText, RotateCcw, TrendingUp, Wallet } from 'lucide-react';
 import { api } from '@/api';
 import { useApiResource } from '@/hooks/useApiResource';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useMoney } from '@/hooks/useMoney';
 import { PAYMENT_METHODS } from '@/lib/constants';
 import { buildDateRange } from '@/lib/dates';
@@ -15,6 +16,8 @@ import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
 import { RecordList, RecordRow } from '@/components/common/RecordList';
+import { Pagination } from '@/components/common/Pagination';
+import { IconAction } from '@/components/common/IconAction';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import {
@@ -41,47 +44,51 @@ export function PaymentsPage() {
   const money = useMoney();
   const [range, setRange] = useState(() => ({ preset: 'month', ...buildDateRange('month') }));
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [method, setMethod] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [recordOpen, setRecordOpen] = useState(false);
   const [refunding, setRefunding] = useState(null);
 
+  // Filtering and paging happen in MongoDB; summary is a single aggregation.
   const { data, loading, error, reload } = useApiResource(
     async () => {
       const [payments, summary] = await Promise.all([
-        api.payments.list({}),
+        api.payments.listPage({
+          page,
+          pageSize,
+          search: debouncedSearch,
+          method,
+          from: range.start,
+          to: range.end,
+        }),
         api.payments.summary({ start: range.start, end: range.end }),
       ]);
       return { payments, summary };
     },
-    [range.start, range.end],
+    [page, pageSize, debouncedSearch, method, range.start, range.end],
   );
 
-  const payments = useMemo(() => data?.payments || [], [data]);
+  const payments = useMemo(() => data?.payments?.data || [], [data]);
+  const total = data?.payments?.meta?.total ?? 0;
 
   useEffect(() => {
     setSearch('');
     setMethod('all');
+    setPage(1);
   }, [range.start, range.end]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return payments.filter((payment) => {
-      if (method !== 'all' && payment.method !== method) return false;
-      if (!term) return true;
-      return (
-        payment.guestName.toLowerCase().includes(term) ||
-        payment.reference.toLowerCase().includes(term) ||
-        payment.reservationReference.toLowerCase().includes(term)
-      );
-    });
-  }, [payments, search, method]);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, method, pageSize]);
 
-  const inRange = useMemo(
-    () => filtered.filter((payment) => payment.date >= range.start && payment.date <= range.end),
-    [filtered, range.start, range.end],
-  );
+  useEffect(() => {
+    const pages = data?.payments?.meta?.pages;
+    if (pages && page > pages) setPage(pages);
+  }, [data?.payments?.meta?.pages, page]);
 
-  if (loading) return <PageSkeleton />;
+  if (loading && !data) return <PageSkeleton />;
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
 
   const summary = data.summary;
@@ -155,11 +162,11 @@ export function PaymentsPage() {
           </Select>
         </div>
         <p className="text-[11.5px] text-muted-foreground numeric">
-          {t('common.results', { count: inRange.length })}
+          {t('common.results', { count: total })}
         </p>
       </div>
 
-      {inRange.length === 0 ? (
+      {payments.length === 0 ? (
         <EmptyState
           icon={ReceiptText}
           title={t('payments.empty')}
@@ -174,7 +181,7 @@ export function PaymentsPage() {
       ) : (
         <>
         <RecordList>
-          {inRange.map((payment) => {
+          {payments.map((payment) => {
             const Icon = METHOD_ICONS[payment.method] || Wallet;
             const isRefund = payment.type === 'refund';
             return (
@@ -234,20 +241,28 @@ export function PaymentsPage() {
                     </span>
                   </p>
                   {!isRefund ? (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={t('payments.refund')}
+                    <IconAction
+                      icon={RotateCcw}
+                      label={t('payments.refund')}
                       onClick={() => setRefunding(payment)}
-                    >
-                      <RotateCcw className="size-3.5" />
-                    </Button>
+                    />
                   ) : null}
                 </div>
               </RecordRow>
             );
           })}
         </RecordList>
+
+        <Card className="overflow-hidden lg:hidden">
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            className="border-t-0"
+          />
+        </Card>
 
         <Card className="hidden overflow-hidden lg:block">
           <Table>
@@ -264,7 +279,7 @@ export function PaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inRange.map((payment) => {
+              {payments.map((payment) => {
                 const Icon = METHOD_ICONS[payment.method] || Wallet;
                 const isRefund = payment.type === 'refund';
                 return (
@@ -328,6 +343,13 @@ export function PaymentsPage() {
               })}
             </TableBody>
           </Table>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </Card>
         </>
       )}

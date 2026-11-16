@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, Search, UserPlus, Users } from 'lucide-react';
 import { api } from '@/api';
 import { useApiResource } from '@/hooks/useApiResource';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useMoney } from '@/hooks/useMoney';
 import { cn } from '@/lib/utils';
 import { initials } from '@/lib/utils';
@@ -36,16 +37,31 @@ export function GuestsPage() {
   const money = useMoney();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState({ key: 'name', direction: 'asc' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [profileId, setProfileId] = useState(null);
+  const [profile, setProfile] = useState(null);
 
-  const { data, loading, error, reload } = useApiResource(() => api.guests.list(), []);
-  const guests = useMemo(() => data || [], [data]);
+  // Filters, sorting and paging all run in MongoDB; only one page is rendered.
+  const { data, loading, error, reload } = useApiResource(
+    () =>
+      api.guests.listPage({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        filter,
+        sort: sort.key,
+        direction: sort.direction,
+      }),
+    [page, pageSize, debouncedSearch, filter, sort.key, sort.direction],
+  );
+  const guests = useMemo(() => data?.data || [], [data]);
+  const total = data?.meta?.total ?? 0;
+  const counts = data?.meta?.counts || { all: 0, inHouse: 0, upcoming: 0, balance: 0 };
 
   useEffect(() => {
     if (!data) return;
@@ -59,46 +75,18 @@ export function GuestsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, filter, pageSize]);
+  }, [debouncedSearch, filter, pageSize]);
 
-  const counts = useMemo(
-    () => ({
-      all: guests.length,
-      inHouse: guests.filter((guest) => guest.currentStay).length,
-      upcoming: guests.filter((guest) => guest.upcomingStay).length,
-      balance: guests.filter((guest) => guest.outstanding > 0).length,
-    }),
-    [guests],
-  );
+  useEffect(() => {
+    const pages = data?.meta?.pages;
+    if (pages && page > pages) setPage(pages);
+  }, [data?.meta?.pages, page]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const rows = guests.filter((guest) => {
-      if (filter === 'inHouse' && !guest.currentStay) return false;
-      if (filter === 'upcoming' && !guest.upcomingStay) return false;
-      if (filter === 'balance' && guest.outstanding <= 0) return false;
-      if (!term) return true;
-      return (
-        guest.name.toLowerCase().includes(term) ||
-        guest.email.toLowerCase().includes(term) ||
-        guest.phone.includes(term)
-      );
-    });
-    const direction = sort.direction === 'asc' ? 1 : -1;
-    return rows.sort((a, b) => {
-      if (sort.key === 'totalSpent' || sort.key === 'outstanding' || sort.key === 'stayCount') {
-        return (a[sort.key] - b[sort.key]) * direction;
-      }
-      return String(a[sort.key] ?? '').localeCompare(String(b[sort.key] ?? '')) * direction;
-    });
-  }, [guests, search, filter, sort]);
-
-  const paged = useMemo(
-    () => filtered.slice((page - 1) * pageSize, page * pageSize),
-    [filtered, page, pageSize],
-  );
-
-  const profile = useMemo(() => guests.find((guest) => guest.id === profileId) || null, [guests, profileId]);
+  const openProfile = async (guest) => {
+    setProfile(guest);
+    const full = await api.guests.get(guest.id).catch(() => null);
+    if (full) setProfile(full);
+  };
 
   const toggleSort = (key) => {
     setSort((prev) =>
@@ -108,7 +96,7 @@ export function GuestsPage() {
     );
   };
 
-  if (loading) return <PageSkeleton />;
+  if (loading && !data) return <PageSkeleton />;
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
 
   return (
@@ -138,24 +126,24 @@ export function GuestsPage() {
             placeholder={t('guests.searchPlaceholder')}
             className="w-full sm:w-[280px]"
           />
-          <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-border bg-card p-0.5">
+          <div className="grid w-full grid-cols-2 gap-1.5 sm:inline-flex sm:w-auto sm:gap-0.5 sm:rounded-lg sm:border sm:border-border sm:bg-card sm:p-0.5">
             {FILTERS.map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => setFilter(option)}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11.5px] font-medium transition-colors',
+                  'inline-flex items-center justify-between gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-[11.5px] font-medium transition-colors sm:justify-start sm:rounded-md sm:border-0 sm:px-2.5 sm:py-1.5',
                   filter === option
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    ? 'border-primary/25 bg-primary-soft text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground sm:border-0 sm:bg-transparent',
                 )}
               >
                 {t(`guests.filter${option.charAt(0).toUpperCase()}${option.slice(1)}`)}
                 <span
                   className={cn(
                     'rounded text-[10px] font-semibold numeric',
-                    filter === option ? 'text-primary-foreground/80' : 'text-muted-foreground/70',
+                    filter === option ? 'text-primary/80' : 'text-muted-foreground/70',
                   )}
                 >
                   {counts[option]}
@@ -188,12 +176,12 @@ export function GuestsPage() {
             </SelectContent>
           </Select>
           <p className="shrink-0 text-[11.5px] text-muted-foreground numeric">
-            {t('common.results', { count: filtered.length })}
+            {t('common.results', { count: total })}
           </p>
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {guests.length === 0 ? (
         <EmptyState
           icon={search ? Search : Users}
           title={t('guests.empty')}
@@ -214,8 +202,8 @@ export function GuestsPage() {
       ) : (
         <>
         <RecordList>
-          {paged.map((guest) => (
-            <RecordRow key={guest.id} onClick={() => setProfileId(guest.id)}>
+          {guests.map((guest) => (
+            <RecordRow key={guest.id} onClick={() => openProfile(guest)}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <Avatar className="size-9 shrink-0">
@@ -223,14 +211,16 @@ export function GuestsPage() {
                   </Avatar>
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold leading-tight">{guest.name}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                       {guest.email || guest.phone || '—'}
                     </p>
                   </div>
                 </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-[13px] font-semibold numeric">{money.currency(guest.totalSpent)}</p>
-                  <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                <div className="shrink-0 pl-3 text-right">
+                  <p className="text-[13px] font-semibold leading-none numeric">
+                    {money.currency(guest.totalSpent)}
+                  </p>
+                  <p className="mt-1 whitespace-nowrap text-[9.5px] uppercase leading-none tracking-[0.06em] text-muted-foreground">
                     {t('guests.totalSpent')}
                   </p>
                 </div>
@@ -261,14 +251,18 @@ export function GuestsPage() {
               </div>
             </RecordRow>
           ))}
+        </RecordList>
+
+        <Card className="overflow-hidden lg:hidden">
           <Pagination
             page={page}
             pageSize={pageSize}
-            total={filtered.length}
+            total={total}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
+            className="border-t-0"
           />
-        </RecordList>
+        </Card>
 
         <Card className="hidden overflow-hidden lg:block">
           <Table>
@@ -303,11 +297,11 @@ export function GuestsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((guest) => (
+              {guests.map((guest) => (
                 <TableRow
                   key={guest.id}
                   className="cursor-pointer"
-                  onClick={() => setProfileId(guest.id)}
+                  onClick={() => openProfile(guest)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-2.5">
@@ -361,7 +355,7 @@ export function GuestsPage() {
           <Pagination
             page={page}
             pageSize={pageSize}
-            total={filtered.length}
+            total={total}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
           />
@@ -382,10 +376,10 @@ export function GuestsPage() {
       <GuestProfileSheet
         guest={profile}
         onOpenChange={(open) => {
-          if (!open) setProfileId(null);
+          if (!open) setProfile(null);
         }}
         onEdit={(guest) => {
-          setProfileId(null);
+          setProfile(null);
           setEditing(guest);
           setFormOpen(true);
         }}

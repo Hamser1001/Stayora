@@ -1,16 +1,11 @@
-import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 /**
- * Mobile replacement for wide data tables. Renders stacked record cards below
- * the `lg` breakpoint, where the desktop table is hidden instead.
+ * Mobile replacement for wide data tables: a stack of standalone record cards
+ * shown below the `lg` breakpoint, where the desktop table is hidden instead.
  */
 export function RecordList({ className, children }) {
-  return (
-    <Card className={cn('divide-y divide-border/60 overflow-hidden lg:hidden', className)}>
-      {children}
-    </Card>
-  );
+  return <div className={cn('space-y-2.5 lg:hidden', className)}>{children}</div>;
 }
 
 export function RecordRow({ onClick, className, children }) {
@@ -20,8 +15,8 @@ export function RecordRow({ onClick, className, children }) {
       type={onClick ? 'button' : undefined}
       onClick={onClick}
       className={cn(
-        'flex w-full flex-col gap-2 px-4 py-3.5 text-left',
-        onClick && 'transition-colors hover:bg-muted/40 active:bg-muted/70',
+        'flex w-full flex-col items-stretch gap-2.5 rounded-xl border border-border/80 bg-card px-4 py-3.5 text-left shadow-card',
+        onClick && 'transition-colors hover:bg-muted/30 active:bg-muted/60',
         className,
       )}
     >

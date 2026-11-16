@@ -13,9 +13,9 @@ import {
 } from 'lucide-react';
 import { api } from '@/api';
 import { useApiResource } from '@/hooks/useApiResource';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useMoney } from '@/hooks/useMoney';
 import { BOOKING_SOURCES, RESERVATION_STATUSES } from '@/lib/constants';
-import { todayISO } from '@/lib/dates';
 import { Avatar, AvatarFallback } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -24,6 +24,7 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { SortableHead } from '@/components/common/SortableHead';
 import { Pagination } from '@/components/common/Pagination';
+import { SegmentedControl, SegmentedOption } from '@/components/ui/segmented';
 import { RecordList, RecordRow } from '@/components/common/RecordList';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -50,6 +51,7 @@ export function ReservationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'list');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [status, setStatus] = useState('all');
   const [source, setSource] = useState('all');
   const [sort, setSort] = useState({ key: 'arrival', direction: 'desc' });
@@ -60,8 +62,23 @@ export function ReservationsPage() {
   const [focused, setFocused] = useState(null);
   const [paying, setPaying] = useState(null);
 
-  const { data, loading, error, reload } = useApiResource(() => api.reservations.list(), []);
-  const reservations = useMemo(() => data || [], [data]);
+  // The server filters, sorts and paginates; the client only renders one page.
+  const { data, loading, error, reload } = useApiResource(
+    () =>
+      api.reservations.listPage({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        status,
+        source,
+        sort: sort.key,
+        direction: sort.direction,
+      }),
+    [page, pageSize, debouncedSearch, status, source, sort.key, sort.direction],
+  );
+  const reservations = useMemo(() => data?.data || [], [data]);
+  const total = data?.meta?.total ?? 0;
+  const summary = data?.meta?.counts || { arrivals: 0, departures: 0, inHouse: 0, pending: 0 };
 
   useEffect(() => {
     localStorage.setItem(VIEW_KEY, view);
@@ -87,8 +104,10 @@ export function ReservationsPage() {
       setSearchParams(next, { replace: true });
     }
     if (focusParam) {
-      const found = data.find((item) => item.id === focusParam);
-      if (found) setFocused(found);
+      api.reservations
+        .get(focusParam)
+        .then((found) => found && setFocused(found))
+        .catch(() => null);
       const next = new URLSearchParams(searchParams);
       next.delete('focus');
       setSearchParams(next, { replace: true });
@@ -97,45 +116,12 @@ export function ReservationsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, source, pageSize]);
+  }, [debouncedSearch, status, source, pageSize]);
 
-  const summary = useMemo(() => {
-    const today = todayISO();
-    return {
-      arrivals: reservations.filter(
-        (r) => r.arrival === today && ['confirmed', 'pending'].includes(r.status),
-      ).length,
-      departures: reservations.filter((r) => r.departure === today && r.status === 'checkedIn').length,
-      inHouse: reservations.filter((r) => r.status === 'checkedIn').length,
-      pending: reservations.filter((r) => r.status === 'pending').length,
-    };
-  }, [reservations]);
-
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const rank = { checkedIn: 0, confirmed: 1, pending: 2, checkedOut: 3, noShow: 4, cancelled: 5 };
-    const rows = reservations.filter((reservation) => {
-      if (status !== 'all' && reservation.status !== status) return false;
-      if (source !== 'all' && reservation.source !== source) return false;
-      if (!term) return true;
-      return (
-        reservation.reference.toLowerCase().includes(term) ||
-        reservation.guestName.toLowerCase().includes(term) ||
-        reservation.roomNumber.toLowerCase().includes(term)
-      );
-    });
-    const direction = sort.direction === 'asc' ? 1 : -1;
-    return rows.sort((a, b) => {
-      if (sort.key === 'status') return ((rank[a.status] ?? 9) - (rank[b.status] ?? 9)) * direction;
-      if (sort.key === 'total') return (a.total - b.total) * direction;
-      return String(a[sort.key] ?? '').localeCompare(String(b[sort.key] ?? '')) * direction;
-    });
-  }, [reservations, search, status, source, sort]);
-
-  const paged = useMemo(
-    () => filtered.slice((page - 1) * pageSize, page * pageSize),
-    [filtered, page, pageSize],
-  );
+  useEffect(() => {
+    const pages = data?.meta?.pages;
+    if (pages && page > pages) setPage(pages);
+  }, [data?.meta?.pages, page]);
 
   const toggleSort = (key) => {
     setSort((prev) =>
@@ -152,11 +138,12 @@ export function ReservationsPage() {
 
   const refreshFocused = async () => {
     await reload();
-    const list = await api.reservations.list();
-    setFocused((prev) => (prev ? list.find((item) => item.id === prev.id) || null : null));
+    if (!focused) return;
+    const fresh = await api.reservations.get(focused.id).catch(() => null);
+    setFocused(fresh);
   };
 
-  if (loading) return <PageSkeleton />;
+  if (loading && !data) return <PageSkeleton />;
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
 
   return (
@@ -166,32 +153,22 @@ export function ReservationsPage() {
         subtitle={t('reservations.subtitle')}
         actions={
           <>
-            <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
-              <button
-                type="button"
+            <SegmentedControl>
+              <SegmentedOption
+                iconOnly
+                icon={List}
+                active={view === 'list'}
                 onClick={() => setView('list')}
-                className={cn(
-                  'grid size-8 place-items-center rounded-md transition-colors',
-                  view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
-                )}
                 aria-label={t('reservations.list')}
-              >
-                <List className="size-3.5" />
-              </button>
-              <button
-                type="button"
+              />
+              <SegmentedOption
+                iconOnly
+                icon={CalendarDays}
+                active={view === 'calendar'}
                 onClick={() => setView('calendar')}
-                className={cn(
-                  'grid size-8 place-items-center rounded-md transition-colors',
-                  view === 'calendar'
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
                 aria-label={t('reservations.calendar.title')}
-              >
-                <CalendarDays className="size-3.5" />
-              </button>
-            </div>
+              />
+            </SegmentedControl>
             <Button size="sm" onClick={openCreate}>
               <CalendarPlus className="size-4" />
               {t('reservations.new')}
@@ -300,11 +277,11 @@ export function ReservationsPage() {
               ) : null}
             </div>
             <p className="text-[11.5px] text-muted-foreground numeric">
-              {t('common.results', { count: filtered.length })}
+              {t('common.results', { count: total })}
             </p>
           </div>
 
-          {filtered.length === 0 ? (
+          {reservations.length === 0 ? (
             <EmptyState
               icon={CalendarDays}
               title={t('reservations.empty')}
@@ -319,7 +296,7 @@ export function ReservationsPage() {
           ) : (
             <>
             <RecordList>
-              {paged.map((reservation) => (
+              {reservations.map((reservation) => (
                 <RecordRow key={reservation.id} onClick={() => setFocused(reservation)}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2.5">
@@ -340,7 +317,7 @@ export function ReservationsPage() {
                     <StatusBadge status={reservation.status} />
                   </div>
 
-                  <p className="truncate text-[11.5px] text-muted-foreground">
+                  <p className="truncate text-[11px] text-muted-foreground">
                     {t('rooms.room')} {reservation.roomNumber} ·{' '}
                     {t('rooms.bedLabel', { number: reservation.bed?.number })} ·{' '}
                     {t('units.guest', { count: reservation.guests })} ·{' '}
@@ -349,33 +326,38 @@ export function ReservationsPage() {
                     })}
                   </p>
 
-                  <div className="flex items-end justify-between gap-2">
+                  <div className="flex items-end justify-between gap-3 border-t border-border/60 pt-2.5">
                     <div className="min-w-0">
-                      <p className="text-[11.5px] font-medium numeric">
-                        {money.date(reservation.arrival, { style: 'short' })} →{' '}
+                      <p className="whitespace-nowrap text-[12px] font-medium numeric">
+                        {money.date(reservation.arrival, { style: 'short' })}
+                        <span className="mx-1 text-muted-foreground/70">→</span>
                         {money.date(reservation.departure, { style: 'short' })}
                       </p>
-                      <p className="mt-0.5 text-[10.5px] text-muted-foreground numeric">
+                      <p className="mt-1 text-[10.5px] text-muted-foreground numeric">
                         {t('units.night', { count: reservation.nights })}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <StatusBadge status={reservation.paymentStatus} dot={false} />
-                      <span className="text-[13px] font-semibold numeric">
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <span className="text-[14px] font-semibold leading-none numeric">
                         {money.currency(reservation.total)}
                       </span>
+                      <StatusBadge status={reservation.paymentStatus} dot={false} />
                     </div>
                   </div>
                 </RecordRow>
               ))}
+            </RecordList>
+
+            <Card className="overflow-hidden lg:hidden">
               <Pagination
                 page={page}
                 pageSize={pageSize}
-                total={filtered.length}
+                total={total}
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
+                className="border-t-0"
               />
-            </RecordList>
+            </Card>
 
             <Card className="hidden overflow-hidden lg:block">
               <Table>
@@ -414,7 +396,7 @@ export function ReservationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paged.map((reservation) => (
+                  {reservations.map((reservation) => (
                     <TableRow
                       key={reservation.id}
                       className="cursor-pointer"
@@ -470,7 +452,7 @@ export function ReservationsPage() {
               <Pagination
                 page={page}
                 pageSize={pageSize}
-                total={filtered.length}
+                total={total}
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
               />

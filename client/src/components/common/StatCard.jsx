@@ -37,7 +37,7 @@ export function StatCard({
   const tones = {
     default: 'bg-muted text-foreground/60',
     primary: 'bg-primary-soft text-primary',
-    gold: 'bg-gold-soft text-[hsl(32_60%_32%)]',
+    gold: 'bg-gold-soft text-gold-foreground',
     success: 'bg-status-available-soft text-status-available',
     info: 'bg-status-occupied-soft text-status-occupied',
     danger: 'bg-status-maintenance-soft text-status-maintenance',

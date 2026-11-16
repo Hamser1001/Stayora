@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { models } from './models.js';
 import { buildSeedDatabase } from './seedData.js';
+import { syncCounters } from '../services/snapshot.js';
 
 const DEMO_PASSWORD = 'stayora2026';
 
@@ -26,6 +27,11 @@ export async function seedDatabase() {
     models.Notification.deleteMany({}),
     models.Setting.deleteMany({}),
   ]);
+
+  await Promise.all(
+    Object.values(models).map((model) => model.syncIndexes().catch(() => null)),
+  );
+  await syncCounters();
 
   await Promise.all([
     models.Room.insertMany(data.rooms),

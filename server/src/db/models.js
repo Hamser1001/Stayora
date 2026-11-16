@@ -9,7 +9,7 @@ const baseSchema = (definition, { collection, indexes = [] } = {}) => {
       id: { type: String, required: true, unique: true, index: true },
       ...definition,
     },
-    { timestamps: false, versionKey: false, _id: false, collection },
+    { timestamps: false, versionKey: false, collection },
   );
   indexes.forEach(([fields, options]) => schema.index(fields, options));
   return schema;
@@ -29,7 +29,7 @@ const Room = model(
       notes: { type: String, default: '' },
       createdAt: { type: String },
     },
-    { collection: 'rooms' },
+    { collection: 'rooms', indexes: [[{ number: 1 }, {}]] },
   ),
 );
 
@@ -45,7 +45,7 @@ const Bed = model(
       outOfService: { type: Boolean, default: false },
       note: { type: String, default: '' },
     },
-    { collection: 'beds' },
+    { collection: 'beds', indexes: [[{ roomId: 1, number: 1 }, {}]] },
   ),
 );
 
@@ -62,7 +62,7 @@ const Guest = model(
       notes: { type: String, default: '' },
       createdAt: { type: String },
     },
-    { collection: 'guests' },
+    { collection: 'guests', indexes: [[{ name: 1 }, {}], [{ createdAt: -1 }, {}]] },
   ),
 );
 
@@ -88,8 +88,26 @@ const Reservation = model(
       updatedAt: { type: String },
       checkedInAt: { type: String },
       checkedOutAt: { type: String },
+      // Denormalised read model: avoids joins for list, search and sort paths.
+      guestName: { type: String, default: '' },
+      roomNumber: { type: String, default: '' },
+      bedLabel: { type: String, default: '' },
+      paid: { type: Number, default: 0 },
     },
-    { collection: 'reservations' },
+    {
+      collection: 'reservations',
+      indexes: [
+        [{ arrival: -1, id: -1 }, {}],
+        [{ status: 1, arrival: -1 }, {}],
+        [{ status: 1, departure: 1 }, {}],
+        [{ guestId: 1, arrival: -1 }, {}],
+        [{ bedId: 1, arrival: 1, departure: 1 }, {}],
+        [{ roomId: 1, arrival: 1, departure: 1 }, {}],
+        [{ arrival: 1, departure: 1 }, {}],
+        [{ createdAt: -1 }, {}],
+        [{ guestName: 1 }, {}],
+      ],
+    },
   ),
 );
 
@@ -107,8 +125,18 @@ const Payment = model(
       notes: { type: String, default: '' },
       createdAt: { type: String },
       createdBy: { type: String, default: '' },
+      guestName: { type: String, default: '' },
+      reservationReference: { type: String, default: '' },
+      roomNumber: { type: String, default: '' },
     },
-    { collection: 'payments' },
+    {
+      collection: 'payments',
+      indexes: [
+        [{ date: -1, createdAt: -1 }, {}],
+        [{ method: 1, date: -1 }, {}],
+        [{ guestName: 1 }, {}],
+      ],
+    },
   ),
 );
 
@@ -125,7 +153,7 @@ const Expense = model(
       notes: { type: String, default: '' },
       createdAt: { type: String },
     },
-    { collection: 'expenses' },
+    { collection: 'expenses', indexes: [[{ date: -1 }, {}], [{ category: 1, date: -1 }, {}]] },
   ),
 );
 
@@ -143,7 +171,7 @@ const Task = model(
       description: { type: String, default: '' },
       createdAt: { type: String },
     },
-    { collection: 'tasks' },
+    { collection: 'tasks', indexes: [[{ status: 1, due: 1 }, {}], [{ roomId: 1, status: 1 }, {}]] },
   ),
 );
 
@@ -158,8 +186,31 @@ const Staff = model(
       status: { type: String, default: 'active' },
       lastActive: { type: String, default: null },
       invitedAt: { type: String },
+      // Access control
+      permissions: { type: [String], default: [] },
+      mustChangePassword: { type: Boolean, default: false },
+      tempPasswordIssuedAt: { type: String, default: null },
+      passwordUpdatedAt: { type: String, default: null },
+      createdBy: { type: String, default: '' },
     },
-    { collection: 'staff' },
+    { collection: 'staff', indexes: [[{ status: 1 }, {}]] },
+  ),
+);
+
+/** Audit trail used by staff activity and the security log. */
+const Activity = model(
+  'Activity',
+  baseSchema(
+    {
+      actorId: { type: String, default: null },
+      actorName: { type: String, default: 'System' },
+      action: { type: String, required: true },
+      entity: { type: String, default: 'staff' },
+      entityId: { type: String, default: null },
+      meta: { type: Schema.Types.Mixed, default: {} },
+      createdAt: { type: String },
+    },
+    { collection: 'activity', indexes: [[{ createdAt: -1 }, {}], [{ actorId: 1, createdAt: -1 }, {}]] },
   ),
 );
 
@@ -172,7 +223,7 @@ const Notification = model(
       read: { type: Boolean, default: false },
       createdAt: { type: String },
     },
-    { collection: 'notifications' },
+    { collection: 'notifications', indexes: [[{ createdAt: -1 }, {}]] },
   ),
 );
 
@@ -187,6 +238,18 @@ const Setting = model(
   ),
 );
 
+/** Monotonic counter used to allocate the next string id without scanning. */
+const Counter = model(
+  'Counter',
+  new Schema(
+    {
+      key: { type: String, required: true, unique: true },
+      value: { type: Number, required: true, default: 0 },
+    },
+    { timestamps: false, versionKey: false, collection: 'counters' },
+  ),
+);
+
 export const models = {
   Room,
   Bed,
@@ -198,4 +261,6 @@ export const models = {
   Staff,
   Notification,
   Setting,
+  Counter,
+  Activity,
 };

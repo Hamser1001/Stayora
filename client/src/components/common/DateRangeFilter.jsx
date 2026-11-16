@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Label } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/primitives';
 import { buildDateRange } from '@/lib/dates';
 import { cn } from '@/lib/utils';
@@ -33,7 +34,7 @@ export function DateRangeFilter({ value, onChange, presets = ['today', 'week', '
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 shadow-[0_1px_1px_hsl(200_20%_10%/0.02)]',
+        'grid w-full grid-cols-2 gap-1.5 sm:inline-flex sm:w-auto sm:items-center sm:gap-0.5 sm:rounded-lg sm:border sm:border-border sm:bg-card sm:p-0.5 sm:shadow-xs',
         className,
       )}
     >
@@ -43,10 +44,10 @@ export function DateRangeFilter({ value, onChange, presets = ['today', 'week', '
           type="button"
           onClick={() => selectPreset(preset)}
           className={cn(
-            'h-8 whitespace-nowrap rounded-md px-2.5 text-[12px] font-medium transition-colors',
+            'inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 text-[12px] font-medium transition-colors sm:h-8 sm:justify-start sm:rounded-md sm:border-0',
             value.preset === preset
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              ? 'border-primary/25 bg-primary-soft text-primary'
+              : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground sm:border-0 sm:bg-transparent',
           )}
         >
           {preset === 'custom' ? (
@@ -74,20 +75,20 @@ export function DateRangeFilter({ value, onChange, presets = ['today', 'week', '
           <div className="mt-3 space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="range-start">{t('common.from')}</Label>
-              <Input
+              <DatePicker
                 id="range-start"
-                type="date"
                 value={draft.start}
-                onChange={(event) => setDraft((prev) => ({ ...prev, start: event.target.value }))}
+                onChange={(next) => setDraft((prev) => ({ ...prev, start: next }))}
+                max={draft.end}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="range-end">{t('common.to')}</Label>
-              <Input
+              <DatePicker
                 id="range-end"
-                type="date"
                 value={draft.end}
-                onChange={(event) => setDraft((prev) => ({ ...prev, end: event.target.value }))}
+                onChange={(next) => setDraft((prev) => ({ ...prev, end: next }))}
+                min={draft.start}
               />
             </div>
             <Button size="sm" className="w-full" onClick={applyCustom}>

@@ -9,7 +9,7 @@ const badgeVariants = cva(
         default: 'border-transparent bg-primary/10 text-primary',
         neutral: 'border-border bg-muted/70 text-muted-foreground',
         outline: 'border-border bg-card text-foreground/75',
-        gold: 'border-gold/25 bg-gold-soft text-[hsl(32_60%_30%)]',
+        gold: 'border-gold/25 bg-gold-soft text-gold-foreground',
         success: 'border-status-available/20 bg-status-available-soft text-status-available',
         info: 'border-status-occupied/20 bg-status-occupied-soft text-status-occupied',
         warning: 'border-status-reserved/25 bg-status-reserved-soft text-status-reserved',

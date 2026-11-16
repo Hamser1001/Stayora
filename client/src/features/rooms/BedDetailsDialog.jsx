@@ -112,7 +112,7 @@ export function BedDetailsDialog({ selection, onOpenChange, onUpdated }) {
         </div>
 
         {bed.status === 'occupied' ? (
-          <p className="rounded-lg bg-status-reserved-soft px-3 py-2 text-[11.5px] leading-relaxed text-[hsl(32_60%_32%)]">
+          <p className="rounded-lg bg-status-reserved-soft px-3 py-2 text-[11.5px] leading-relaxed text-gold-foreground">
             {t('rooms.checkoutFirst')}
           </p>
         ) : null}

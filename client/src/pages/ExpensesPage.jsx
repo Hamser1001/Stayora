@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Banknote, PieChart as PieIcon, Plus, ReceiptText, Tag, Trash2 } from 'lucide-react';
 import { api } from '@/api';
 import { useApiResource } from '@/hooks/useApiResource';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useMoney } from '@/hooks/useMoney';
 import { EXPENSE_CATEGORIES, CHART_COLORS } from '@/lib/constants';
 import { buildDateRange } from '@/lib/dates';
@@ -16,6 +17,8 @@ import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
 import { RecordList, RecordRow } from '@/components/common/RecordList';
+import { Pagination } from '@/components/common/Pagination';
+import { IconAction } from '@/components/common/IconAction';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import { ChartCard, ChartTooltip } from '@/components/charts/ChartKit';
@@ -34,34 +37,42 @@ export function ExpensesPage() {
   const money = useMoney();
   const [range, setRange] = useState(() => ({ preset: 'month', ...buildDateRange('month') }));
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [category, setCategory] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [formOpen, setFormOpen] = useState(false);
 
+  // The API applies the date range, category, search, sort and page.
   const { data, loading, error, reload } = useApiResource(
     async () => {
       const [expenses, summary] = await Promise.all([
-        api.expenses.list({}),
+        api.expenses.listPage({
+          page,
+          pageSize,
+          search: debouncedSearch,
+          category,
+          from: range.start,
+          to: range.end,
+        }),
         api.expenses.summary({ start: range.start, end: range.end }),
       ]);
       return { expenses, summary };
     },
-    [range.start, range.end],
+    [page, pageSize, debouncedSearch, category, range.start, range.end],
   );
 
-  const expenses = useMemo(() => data?.expenses || [], [data]);
+  const expenses = useMemo(() => data?.expenses?.data || [], [data]);
+  const total = data?.expenses?.meta?.total ?? 0;
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return expenses.filter((expense) => {
-      if (category !== 'all' && expense.category !== category) return false;
-      if (expense.date < range.start || expense.date > range.end) return false;
-      if (!term) return true;
-      return (
-        expense.vendor.toLowerCase().includes(term) ||
-        t(`expenses.categories.${expense.category}`).toLowerCase().includes(term)
-      );
-    });
-  }, [expenses, search, category, range.start, range.end, t]);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, category, range.start, range.end, pageSize]);
+
+  useEffect(() => {
+    const pages = data?.expenses?.meta?.pages;
+    if (pages && page > pages) setPage(pages);
+  }, [data?.expenses?.meta?.pages, page]);
 
   const handleDelete = async (expense) => {
     try {
@@ -73,7 +84,7 @@ export function ExpensesPage() {
     }
   };
 
-  if (loading) return <PageSkeleton />;
+  if (loading && !data) return <PageSkeleton />;
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
 
   const summary = data.summary;
@@ -120,11 +131,7 @@ export function ExpensesPage() {
         />
         <StatCard
           label={t('expenses.thisMonth')}
-          value={money.currency(
-            expenses
-              .filter((expense) => expense.date >= buildDateRange('month').start)
-              .reduce((sum, expense) => sum + expense.amount, 0),
-          )}
+          value={money.currency(summary.thisMonth ?? 0)}
           icon={PieIcon}
           tone="primary"
         />
@@ -213,11 +220,11 @@ export function ExpensesPage() {
               </SelectContent>
             </Select>
             <span className="ml-auto text-[11.5px] text-muted-foreground numeric">
-              {t('common.results', { count: filtered.length })}
+              {t('common.results', { count: total })}
             </span>
           </div>
 
-          {filtered.length === 0 ? (
+          {expenses.length === 0 ? (
             <EmptyState
               icon={ReceiptText}
               title={t('expenses.empty')}
@@ -232,7 +239,7 @@ export function ExpensesPage() {
           ) : (
             <>
             <RecordList>
-              {filtered.map((expense) => (
+              {expenses.map((expense) => (
                 <RecordRow key={expense.id}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -247,15 +254,12 @@ export function ExpensesPage() {
                       <span className="text-[13px] font-semibold numeric">
                         {money.currency(expense.amount)}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-destructive"
-                        aria-label={t('common.delete')}
+                      <IconAction
+                        variant="destructive-ghost"
+                        icon={Trash2}
+                        label={t('common.delete')}
                         onClick={() => handleDelete(expense)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      />
                     </div>
                   </div>
                   <span className="inline-flex w-fit items-center rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
@@ -264,6 +268,17 @@ export function ExpensesPage() {
                 </RecordRow>
               ))}
             </RecordList>
+
+            <Card className="overflow-hidden lg:hidden">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                className="border-t-0"
+              />
+            </Card>
 
             <Card className="hidden overflow-hidden lg:block">
               <Table>
@@ -278,7 +293,7 @@ export function ExpensesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((expense) => (
+                  {expenses.map((expense) => (
                     <TableRow key={expense.id}>
                       <TableCell className="whitespace-nowrap text-[12px] text-muted-foreground">
                         {money.date(expense.date, { style: 'short' })}
@@ -315,6 +330,13 @@ export function ExpensesPage() {
                   ))}
                 </TableBody>
               </Table>
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </Card>
             </>
           )}

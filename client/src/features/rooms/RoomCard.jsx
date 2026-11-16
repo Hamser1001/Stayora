@@ -78,7 +78,12 @@ export function RoomCard({ room, onEdit, onDelete, onSelectBed, highlighted }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="shrink-0 text-muted-foreground">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground"
+                aria-label={t('common.moreActions')}
+              >
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>

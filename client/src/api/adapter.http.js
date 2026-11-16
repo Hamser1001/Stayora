@@ -3,7 +3,7 @@ import { ApiError } from './errors';
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const TOKEN_KEY = 'stayora.token';
 
-async function request(path, { method = 'GET', body, params } = {}) {
+async function requestEnvelope(path, { method = 'GET', body, params } = {}) {
   const query = params
     ? `?${new URLSearchParams(
         Object.entries(params).filter(([, value]) => value !== undefined && value !== '' && value !== null),
@@ -35,7 +35,18 @@ async function request(path, { method = 'GET', body, params } = {}) {
       details: payload?.details,
     });
   }
+  return payload;
+}
+
+async function request(path, options) {
+  const payload = await requestEnvelope(path, options);
   return payload?.data ?? payload;
+}
+
+/** List endpoints answer with `{ data, meta }` so pages can paginate server-side. */
+async function requestPage(path, options) {
+  const payload = await requestEnvelope(path, options);
+  return { data: payload?.data ?? [], meta: payload?.meta || {} };
 }
 
 const http = {
@@ -69,6 +80,8 @@ const http = {
 
   reservations: {
     list: (filters) => request('/reservations', { params: filters }),
+    listPage: (filters) => requestPage('/reservations', { params: filters }),
+    outstanding: (limit = 500) => request('/reservations/outstanding', { params: { limit } }),
     get: (id) => request(`/reservations/${id}`),
     calendar: ({ start, end }) => request('/reservations/calendar', { params: { start, end } }),
     availability: (params) => request('/reservations/availability', { params }),
@@ -80,6 +93,8 @@ const http = {
 
   guests: {
     list: (filters) => request('/guests', { params: filters }),
+    listPage: (filters) => requestPage('/guests', { params: filters }),
+    options: (params) => request('/guests/options', { params }),
     get: (id) => request(`/guests/${id}`),
     create: (payload) => request('/guests', { method: 'POST', body: payload }),
     update: (id, payload) => request(`/guests/${id}`, { method: 'PATCH', body: payload }),
@@ -87,6 +102,7 @@ const http = {
 
   payments: {
     list: (filters) => request('/payments', { params: filters }),
+    listPage: (filters) => requestPage('/payments', { params: filters }),
     create: (payload) => request('/payments', { method: 'POST', body: payload }),
     refund: (payload) => request('/payments/refunds', { method: 'POST', body: payload }),
     summary: (params) => request('/payments/summary', { params }),
@@ -94,6 +110,7 @@ const http = {
 
   expenses: {
     list: (filters) => request('/expenses', { params: filters }),
+    listPage: (filters) => requestPage('/expenses', { params: filters }),
     create: (payload) => request('/expenses', { method: 'POST', body: payload }),
     remove: (id) => request(`/expenses/${id}`, { method: 'DELETE' }),
     summary: (params) => request('/expenses/summary', { params }),

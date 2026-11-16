@@ -15,21 +15,33 @@ export function paymentStatusOf(total, paid) {
   return 'partial';
 }
 
+/**
+ * Group reservations by bed once per request instead of filtering the whole
+ * list for every bed (beds x reservations became quadratic on large datasets).
+ */
+export function bedIndex(db) {
+  if (db.__bedIndex) return db.__bedIndex;
+  const byBed = new Map();
+  for (const reservation of db.reservations || []) {
+    const list = byBed.get(reservation.bedId);
+    if (list) list.push(reservation);
+    else byBed.set(reservation.bedId, [reservation]);
+  }
+  Object.defineProperty(db, '__bedIndex', { value: byBed, enumerable: false });
+  return byBed;
+}
+
 export function bedStatus(bed, db) {
   if (bed.outOfService) return 'inactive';
   if (bed.maintenance) return 'maintenance';
-  if (db.reservations.some((r) => r.bedId === bed.id && r.status === 'checkedIn')) {
-    return 'occupied';
-  }
+  const stays = bedIndex(db).get(bed.id) || [];
   const today = todayISO();
-  const arriving = db.reservations.find(
-    (r) =>
-      r.bedId === bed.id &&
-      r.status === 'confirmed' &&
-      r.arrival <= today &&
-      r.departure > today,
-  );
-  if (arriving) return 'reserved';
+  let reserved = false;
+  for (const stay of stays) {
+    if (stay.status === 'checkedIn') return 'occupied';
+    if (stay.status === 'confirmed' && stay.arrival <= today && stay.departure > today) reserved = true;
+  }
+  if (reserved) return 'reserved';
   if (bed.cleaning) return 'cleaning';
   return 'available';
 }
@@ -37,12 +49,8 @@ export function bedStatus(bed, db) {
 export function currentReservationForBed(bedId, db) {
   const today = todayISO();
   return (
-    db.reservations.find(
-      (r) =>
-        r.bedId === bedId &&
-        ['checkedIn', 'confirmed'].includes(r.status) &&
-        r.arrival <= today &&
-        r.departure > today,
+    (bedIndex(db).get(bedId) || []).find(
+      (r) => ['checkedIn', 'confirmed'].includes(r.status) && r.arrival <= today && r.departure > today,
     ) || null
   );
 }
@@ -52,7 +60,7 @@ export function enrichReservation(reservation, db) {
   const guest = db.guests.find((g) => g.id === reservation.guestId);
   const room = db.rooms.find((r) => r.id === reservation.roomId);
   const bed = db.beds.find((b) => b.id === reservation.bedId);
-  const paid = reservationPaidTotal(reservation.id, db.payments);
+  const paid = reservation.paid ?? reservationPaidTotal(reservation.id, db.payments || []);
   const total = reservation.total ?? nightsBetween(reservation.arrival, reservation.departure) * reservation.rate;
   return {
     ...reservation,
@@ -77,13 +85,8 @@ export function enrichRoom(room, db) {
     .map((bed) => {
       const status = bedStatus(bed, db);
       const current = currentReservationForBed(bed.id, db);
-      const next = db.reservations
-        .filter(
-          (r) =>
-            r.bedId === bed.id &&
-            ['confirmed', 'pending'].includes(r.status) &&
-            r.arrival > todayISO(),
-        )
+      const next = (bedIndex(db).get(bed.id) || [])
+        .filter((r) => ['confirmed', 'pending'].includes(r.status) && r.arrival > todayISO())
         .sort((a, b) => a.arrival.localeCompare(b.arrival))[0];
       return {
         ...bed,
@@ -153,7 +156,7 @@ function overlapNights(res, start, end) {
   return Math.max(0, diffDays(from, to));
 }
 
-export function metricsForRange(db, start, end) {
+export function metricsForRange(db, start, end, { outstanding: outstandingOverride } = {}) {
   const days = Math.max(1, diffDays(start, end) + 1);
   const totalBeds = db.beds.length;
   const totalRooms = db.rooms.length;
@@ -186,12 +189,15 @@ export function metricsForRange(db, start, end) {
     ? stays.reduce((sum, r) => sum + nightsBetween(r.arrival, r.departure), 0) / stays.length
     : 0;
 
-  const outstanding = db.reservations
-    .filter((r) => ['confirmed', 'checkedIn', 'pending'].includes(r.status))
-    .reduce((sum, r) => {
-      const paid = reservationPaidTotal(r.id, db.payments);
-      return sum + Math.max(0, r.total - paid);
-    }, 0);
+  // Callers with a scoped slice pass the portfolio-wide figure from the DB.
+  const outstanding =
+    outstandingOverride ??
+    db.reservations
+      .filter((r) => ['confirmed', 'checkedIn', 'pending'].includes(r.status))
+      .reduce((sum, r) => {
+        const paid = r.paid ?? reservationPaidTotal(r.id, db.payments || []);
+        return sum + Math.max(0, r.total - paid);
+      }, 0);
 
   return {
     start,
@@ -273,8 +279,8 @@ export function sourceBreakdown(db, start, end) {
     .sort((a, b) => b.count - a.count);
 }
 
-export function dashboardSnapshot(db, start, end) {
-  const metrics = metricsForRange(db, start, end);
+export function dashboardSnapshot(db, start, end, options = {}) {
+  const metrics = metricsForRange(db, start, end, options);
   const today = todayISO();
   const totalBeds = db.beds.length;
   const enrichedBeds = db.beds.map((bed) => ({ ...bed, status: bedStatus(bed, db) }));
@@ -298,12 +304,15 @@ export function dashboardSnapshot(db, start, end) {
     .slice(0, 6)
     .map((r) => enrichReservation(r, db));
 
-  const pendingReservations = db.reservations.filter((r) => r.status === 'pending').length;
+  const pendingReservations =
+    options.pendingReservations ?? db.reservations.filter((r) => r.status === 'pending').length;
   const openTasks = db.tasks.filter((t) => t.status !== 'completed').length;
-  const outstandingCount = db.reservations.filter((r) => {
-    if (!['confirmed', 'checkedIn', 'pending'].includes(r.status)) return false;
-    return r.total > reservationPaidTotal(r.id, db.payments) + 0.009;
-  }).length;
+  const outstandingCount =
+    options.outstandingCount ??
+    db.reservations.filter((r) => {
+      if (!['confirmed', 'checkedIn', 'pending'].includes(r.status)) return false;
+      return r.total > (r.paid ?? reservationPaidTotal(r.id, db.payments || [])) + 0.009;
+    }).length;
 
   return {
     metrics,
