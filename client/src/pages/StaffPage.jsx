@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { RecordList, RecordRow } from '@/components/common/RecordList';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import {
@@ -103,7 +104,74 @@ export function StaffPage() {
         }
       />
 
-      <Card className="overflow-hidden">
+      <RecordList>
+        {members.map((member) => {
+          const isMe = member.name === user?.name;
+          const isOwner = member.role === 'owner';
+          return (
+            <RecordRow key={member.id}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar className="size-9 shrink-0">
+                    <AvatarFallback className="text-[10.5px]">{initials(member.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 truncate text-[13px] font-semibold leading-tight">
+                      {member.name}
+                      {isMe ? (
+                        <span className="rounded bg-primary-soft px-1 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                          {t('staff.you')}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="truncate text-[11px] text-muted-foreground">{member.email}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="shrink-0 text-destructive disabled:text-muted-foreground/40"
+                  disabled={isOwner}
+                  aria-label={t('common.delete')}
+                  onClick={() => setRemoving(member)}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select
+                  value={member.role}
+                  onValueChange={(value) => changeRole(member, value)}
+                  disabled={isOwner}
+                >
+                  <SelectTrigger className="h-8 flex-1 text-[12px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {t(`staff.roles.${role}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <StatusBadge status={member.status} dot={false} />
+                {isOwner ? <Lock className="size-3 shrink-0 text-muted-foreground/60" /> : null}
+              </div>
+
+              <p className="text-[10.5px] text-muted-foreground">
+                {t('staff.lastActive')} ·{' '}
+                {member.lastActive
+                  ? formatDateTime(member.lastActive, { lang: i18n.language })
+                  : t('staff.never')}
+              </p>
+            </RecordRow>
+          );
+        })}
+      </RecordList>
+
+      <Card className="hidden overflow-hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -196,7 +264,28 @@ export function StaffPage() {
             <p className="mt-0.5 text-[11.5px] text-muted-foreground">{t('staff.permissionMatrix')}</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-border/60 lg:hidden">
+          {ROLES.map((role) => (
+            <div key={role} className="px-4 py-3">
+              <p className="text-[12.5px] font-semibold">{t(`staff.roles.${role}`)}</p>
+              <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+                {t(`staff.roleDescriptions.${role}`)}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {MODULES.filter((module) => ROLE_ACCESS[role]?.has(module)).map((module) => (
+                  <span
+                    key={module}
+                    className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground"
+                  >
+                    {t(`staff.modules.${module}`)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto lg:block">
           <table className="w-full caption-bottom text-sm">
             <thead>
               <tr className="border-b border-border/80">

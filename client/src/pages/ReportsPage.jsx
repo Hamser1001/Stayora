@@ -393,6 +393,58 @@ export function ReportsPage() {
           <BedDouble className="size-4 text-muted-foreground" />
           <h3 className="font-display text-[14px] font-semibold">{t('reports.charts.roomPerformance')}</h3>
         </div>
+        <div className="divide-y divide-border/60 lg:hidden">
+          {types.map((type, index) => (
+            <div key={type.type} className="px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-2 text-[12.5px] font-semibold">
+                  <span
+                    className="size-2 shrink-0 rounded-[3px]"
+                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                  />
+                  <span className="truncate">{t(`rooms.type.${type.type}`)}</span>
+                </span>
+                <span className="shrink-0 text-[12.5px] font-semibold numeric">
+                  {money.currency(type.revenue)}
+                </span>
+              </div>
+              <div className="mt-1.5 grid grid-cols-3 gap-2 text-[10.5px] text-muted-foreground">
+                <span>
+                  {t('reports.table.occupancy')}{' '}
+                  <span className="font-semibold text-foreground numeric">
+                    {money.percent(type.occupancy)}
+                  </span>
+                </span>
+                <span>
+                  {t('reports.table.adr')}{' '}
+                  <span className="font-semibold text-foreground numeric">{money.currency(type.adr)}</span>
+                </span>
+                <span>
+                  {t('reports.table.revpar')}{' '}
+                  <span className="font-semibold text-foreground numeric">
+                    {money.currency(type.revpar)}
+                  </span>
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, type.share)}%`,
+                      backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                    }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right text-[10px] text-muted-foreground numeric">
+                  {money.percent(type.share)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -421,6 +473,7 @@ export function ReportsPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
         <div className="flex items-center gap-1.5 border-t border-border/70 px-5 py-2.5 text-[11px] text-muted-foreground">
           <CalendarRange className="size-3.5" />
           {range.start} → {range.end}

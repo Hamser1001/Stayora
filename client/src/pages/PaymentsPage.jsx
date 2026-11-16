@@ -14,6 +14,7 @@ import { StatCard } from '@/components/common/StatCard';
 import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
+import { RecordList, RecordRow } from '@/components/common/RecordList';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import {
@@ -140,7 +141,7 @@ export function PaymentsPage() {
             className="w-full sm:w-[280px]"
           />
           <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="w-full sm:w-[170px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -171,7 +172,84 @@ export function PaymentsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden">
+        <>
+        <RecordList>
+          {inRange.map((payment) => {
+            const Icon = METHOD_ICONS[payment.method] || Wallet;
+            const isRefund = payment.type === 'refund';
+            return (
+              <RecordRow key={payment.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className={cn(
+                        'grid size-9 shrink-0 place-items-center rounded-lg',
+                        isRefund
+                          ? 'bg-status-maintenance-soft text-status-maintenance'
+                          : 'bg-status-available-soft text-status-available',
+                      )}
+                    >
+                      <Icon className="size-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold leading-tight">
+                        {payment.guestName}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {money.date(payment.date, { style: 'short' })} ·{' '}
+                        {t(`payments.methods.${payment.method}`)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p
+                      className={cn(
+                        'text-[13px] font-semibold numeric',
+                        isRefund ? 'text-status-maintenance' : 'text-status-available',
+                      )}
+                    >
+                      {isRefund ? '−' : ''}
+                      {money.currency(payment.amount)}
+                    </p>
+                    <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+                      {payment.reference}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-muted-foreground">
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                        isRefund
+                          ? 'bg-status-maintenance-soft text-status-maintenance'
+                          : 'bg-status-available-soft text-status-available',
+                      )}
+                    >
+                      {t(`payments.types.${payment.type}`)}
+                    </span>
+                    <span className="truncate">
+                      {payment.reservationReference} · {t('rooms.room')} {payment.roomNumber}
+                    </span>
+                  </p>
+                  {!isRefund ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t('payments.refund')}
+                      onClick={() => setRefunding(payment)}
+                    >
+                      <RotateCcw className="size-3.5" />
+                    </Button>
+                  ) : null}
+                </div>
+              </RecordRow>
+            );
+          })}
+        </RecordList>
+
+        <Card className="hidden overflow-hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -251,6 +329,7 @@ export function PaymentsPage() {
             </TableBody>
           </Table>
         </Card>
+        </>
       )}
 
       <RecordPaymentDialog open={recordOpen} onOpenChange={setRecordOpen} onSaved={reload} />

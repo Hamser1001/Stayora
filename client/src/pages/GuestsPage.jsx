@@ -14,9 +14,17 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchInput } from '@/components/common/SearchInput';
 import { SortableHead } from '@/components/common/SortableHead';
 import { Pagination } from '@/components/common/Pagination';
+import { RecordList, RecordRow } from '@/components/common/RecordList';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { GuestFormDialog } from '@/features/guests/GuestFormDialog';
 import { GuestProfileSheet } from '@/features/guests/GuestProfileSheet';
@@ -130,7 +138,7 @@ export function GuestsPage() {
             placeholder={t('guests.searchPlaceholder')}
             className="w-full sm:w-[280px]"
           />
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+          <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-border bg-card p-0.5">
             {FILTERS.map((option) => (
               <button
                 key={option}
@@ -156,9 +164,33 @@ export function GuestsPage() {
             ))}
           </div>
         </div>
-        <p className="text-[11.5px] text-muted-foreground numeric">
-          {t('common.results', { count: filtered.length })}
-        </p>
+        <div className="flex items-center gap-2">
+          <Select
+            value={sort.key}
+            onValueChange={(key) =>
+              setSort((prev) => (prev.key === key ? prev : { key, direction: 'asc' }))
+            }
+          >
+            <SelectTrigger className="w-full sm:w-[170px] lg:hidden">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                ['name', t('guests.guest')],
+                ['stayCount', t('guests.stays')],
+                ['totalSpent', t('guests.totalSpent')],
+                ['outstanding', t('guests.outstanding')],
+              ].map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {t('common.sortBy')} · {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="shrink-0 text-[11.5px] text-muted-foreground numeric">
+            {t('common.results', { count: filtered.length })}
+          </p>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -180,7 +212,65 @@ export function GuestsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden">
+        <>
+        <RecordList>
+          {paged.map((guest) => (
+            <RecordRow key={guest.id} onClick={() => setProfileId(guest.id)}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar className="size-9 shrink-0">
+                    <AvatarFallback className="text-[10.5px]">{initials(guest.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold leading-tight">{guest.name}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {guest.email || guest.phone || '—'}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[13px] font-semibold numeric">{money.currency(guest.totalSpent)}</p>
+                  <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                    {t('guests.totalSpent')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                <span>{guest.nationality || '—'}</span>
+                <span className="text-border">·</span>
+                <span className="numeric">{t('units.stay', { count: guest.stayCount })}</span>
+                {guest.lastStay ? (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="numeric">
+                      {t('guests.lastStay')} {money.date(guest.lastStay.departure, { style: 'short' })}
+                    </span>
+                  </>
+                ) : null}
+                {guest.currentStay ? (
+                  <span className="rounded-full bg-status-occupied-soft px-2 py-0.5 text-[10px] font-semibold text-status-occupied">
+                    {t('guests.currentStay')}
+                  </span>
+                ) : null}
+                {guest.outstanding > 0 ? (
+                  <span className="ml-auto rounded-full bg-status-maintenance-soft px-2 py-0.5 text-[10.5px] font-semibold text-status-maintenance numeric">
+                    {money.currency(guest.outstanding)} {t('guests.outstanding').toLowerCase()}
+                  </span>
+                ) : null}
+              </div>
+            </RecordRow>
+          ))}
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </RecordList>
+
+        <Card className="hidden overflow-hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -276,6 +366,7 @@ export function GuestsPage() {
             onPageSizeChange={setPageSize}
           />
         </Card>
+        </>
       )}
 
       <GuestFormDialog

@@ -15,6 +15,7 @@ import { StatCard } from '@/components/common/StatCard';
 import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
+import { RecordList, RecordRow } from '@/components/common/RecordList';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import { ChartCard, ChartTooltip } from '@/components/charts/ChartKit';
@@ -199,7 +200,7 @@ export function ExpensesPage() {
               className="w-full sm:w-[260px]"
             />
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[190px]">
+              <SelectTrigger className="w-full sm:w-[190px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -229,7 +230,42 @@ export function ExpensesPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden">
+            <>
+            <RecordList>
+              {filtered.map((expense) => (
+                <RecordRow key={expense.id}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold leading-tight">{expense.vendor}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        {money.date(expense.date, { style: 'short' })} ·{' '}
+                        {t(`payments.methods.${expense.method}`)}
+                        {expense.receipt ? ` · ${expense.receipt}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <span className="text-[13px] font-semibold numeric">
+                        {money.currency(expense.amount)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive"
+                        aria-label={t('common.delete')}
+                        onClick={() => handleDelete(expense)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <span className="inline-flex w-fit items-center rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+                    {t(`expenses.categories.${expense.category}`)}
+                  </span>
+                </RecordRow>
+              ))}
+            </RecordList>
+
+            <Card className="hidden overflow-hidden lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -280,6 +316,7 @@ export function ExpensesPage() {
                 </TableBody>
               </Table>
             </Card>
+            </>
           )}
         </div>
       </div>

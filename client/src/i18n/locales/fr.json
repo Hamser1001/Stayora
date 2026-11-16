@@ -75,6 +75,7 @@
     "sortAsc": "Trier par ordre croissant",
     "sortDesc": "Trier par ordre décroissant",
     "filterBy": "Filtrer par {{label}}",
+    "sortBy": "Trier par",
     "required": "Ce champ est obligatoire",
     "confirmDelete": "Supprimer définitivement",
     "dismiss": "Ignorer",

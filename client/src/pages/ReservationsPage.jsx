@@ -24,6 +24,7 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { SortableHead } from '@/components/common/SortableHead';
 import { Pagination } from '@/components/common/Pagination';
+import { RecordList, RecordRow } from '@/components/common/RecordList';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
@@ -235,7 +236,7 @@ export function ReservationsPage() {
                 className="w-full sm:w-[270px]"
               />
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,7 +249,7 @@ export function ReservationsPage() {
                 </SelectContent>
               </Select>
               <Select value={source} onValueChange={setSource}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,6 +257,30 @@ export function ReservationsPage() {
                   {BOOKING_SOURCES.map((option) => (
                     <SelectItem key={option} value={option}>
                       {t(`reservations.sourceLabels.${option}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={sort.key}
+                onValueChange={(key) =>
+                  setSort((prev) => (prev.key === key ? prev : { key, direction: 'asc' }))
+                }
+              >
+                <SelectTrigger className="w-full sm:w-[170px] lg:hidden">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    ['arrival', t('reservations.arrival')],
+                    ['departure', t('reservations.departure')],
+                    ['reference', t('reservations.reference')],
+                    ['guestName', t('reservations.guest')],
+                    ['total', t('reservations.total')],
+                    ['status', t('common.status')],
+                  ].map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {t('common.sortBy')} · {label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -292,7 +317,67 @@ export function ReservationsPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden">
+            <>
+            <RecordList>
+              {paged.map((reservation) => (
+                <RecordRow key={reservation.id} onClick={() => setFocused(reservation)}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <Avatar className="size-9 shrink-0">
+                        <AvatarFallback className="text-[10.5px]">
+                          {initials(reservation.guestName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold leading-tight">
+                          {reservation.guestName}
+                        </p>
+                        <p className="mt-0.5 truncate font-mono text-[10.5px] text-muted-foreground">
+                          {reservation.reference}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge status={reservation.status} />
+                  </div>
+
+                  <p className="truncate text-[11.5px] text-muted-foreground">
+                    {t('rooms.room')} {reservation.roomNumber} ·{' '}
+                    {t('rooms.bedLabel', { number: reservation.bed?.number })} ·{' '}
+                    {t('units.guest', { count: reservation.guests })} ·{' '}
+                    {t(`reservations.sourceLabels.${reservation.source}`, {
+                      defaultValue: reservation.source,
+                    })}
+                  </p>
+
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[11.5px] font-medium numeric">
+                        {money.date(reservation.arrival, { style: 'short' })} →{' '}
+                        {money.date(reservation.departure, { style: 'short' })}
+                      </p>
+                      <p className="mt-0.5 text-[10.5px] text-muted-foreground numeric">
+                        {t('units.night', { count: reservation.nights })}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <StatusBadge status={reservation.paymentStatus} dot={false} />
+                      <span className="text-[13px] font-semibold numeric">
+                        {money.currency(reservation.total)}
+                      </span>
+                    </div>
+                  </div>
+                </RecordRow>
+              ))}
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                total={filtered.length}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </RecordList>
+
+            <Card className="hidden overflow-hidden lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -390,6 +475,7 @@ export function ReservationsPage() {
                 onPageSizeChange={setPageSize}
               />
             </Card>
+            </>
           )}
         </>
       )}

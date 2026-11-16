@@ -94,6 +94,8 @@ export function ReservationCalendar({ onSelect }) {
           </div>
         </div>
 
+        <div className="overflow-x-auto">
+        <div className="min-w-[560px]">
         <div className="grid grid-cols-7 border-b border-border/60 bg-muted/30">
           {weekdayLabels.map((label, index) => (
             <div
@@ -161,6 +163,9 @@ export function ReservationCalendar({ onSelect }) {
               </button>
             );
           })}
+        </div>
+
+        </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-2.5">

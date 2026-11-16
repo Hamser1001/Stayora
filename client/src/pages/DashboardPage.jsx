@@ -662,6 +662,56 @@ export function DashboardPage() {
             description={t('dashboard.recent.emptyBody')}
           />
         ) : (
+          <>
+          <div className="divide-y divide-border/60 lg:hidden">
+            {recent.map((reservation) => (
+              <button
+                key={reservation.id}
+                type="button"
+                onClick={() => navigate(`/reservations?focus=${reservation.id}`)}
+                className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted/70"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <Avatar className="size-9 shrink-0">
+                      <AvatarFallback className="text-[10.5px]">
+                        {initials(reservation.guestName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold leading-tight">
+                        {reservation.guestName}
+                      </p>
+                      <p className="mt-0.5 truncate font-mono text-[10.5px] text-muted-foreground">
+                        {reservation.reference}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge status={reservation.status} />
+                </div>
+                <div className="flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[11.5px] font-medium numeric">
+                      {money.date(reservation.arrival, { style: 'short' })} →{' '}
+                      {money.date(reservation.departure, { style: 'short' })}
+                    </p>
+                    <p className="mt-0.5 truncate text-[10.5px] text-muted-foreground">
+                      {t('rooms.room')} {reservation.roomNumber} ·{' '}
+                      {t('rooms.bedLabel', { number: reservation.bed?.number })}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <StatusBadge status={reservation.paymentStatus} dot={false} />
+                    <span className="text-[13px] font-semibold numeric">
+                      {money.currency(reservation.total)}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -716,6 +766,8 @@ export function DashboardPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          </>
         )}
       </Card>
     </div>

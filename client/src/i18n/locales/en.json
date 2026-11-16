@@ -75,6 +75,7 @@
     "sortAsc": "Sort ascending",
     "sortDesc": "Sort descending",
     "filterBy": "Filter by {{label}}",
+    "sortBy": "Sort by",
     "required": "This field is required",
     "confirmDelete": "Delete permanently",
     "dismiss": "Dismiss",
