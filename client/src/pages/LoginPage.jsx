@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +12,14 @@ import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/loading';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { isApiError } from '@/api';
 
 const DEMO_EMAIL = 'amina@stayora.app';
@@ -29,8 +37,15 @@ export function LoginPage() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedPath = location.state?.from;
+  const destination =
+    typeof requestedPath === 'string' && requestedPath.startsWith('/') && !requestedPath.startsWith('//')
+      ? requestedPath
+      : '/';
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+  const [forgotOpen, setForgotOpen] = useState(false);
   const schema = useLoginSchema(t);
 
   const {
@@ -46,9 +61,9 @@ export function LoginPage() {
   const onSubmit = async (values) => {
     setFormError('');
     try {
-      await login(values);
+      const session = await login(values);
       toast.success(t('auth.title'), { description: t('dashboard.subtitle', { hostel: 'Maison Nomade' }) });
-      navigate('/', { replace: true });
+      navigate(session?.user?.mustChangePassword ? '/change-password' : destination, { replace: true });
     } catch (error) {
       const message = isApiError(error) ? error.message : t('auth.errors.invalid');
       setFormError(message);
@@ -188,7 +203,11 @@ export function LoginPage() {
                   />
                   {t('auth.remember')}
                 </label>
-                <button type="button" className="text-[12px] font-medium text-primary hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="text-[12px] font-medium text-primary hover:underline"
+                >
                   {t('auth.forgot')}
                 </button>
               </div>
@@ -239,6 +258,23 @@ export function LoginPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>{t('auth.resetTitle')}</DialogTitle>
+            <DialogDescription>{t('auth.resetBody')}</DialogDescription>
+          </DialogHeader>
+          <p className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground">
+            {t('auth.resetHint')}
+          </p>
+          <DialogFooter>
+            <Button type="button" onClick={() => setForgotOpen(false)}>
+              {t('common.done')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

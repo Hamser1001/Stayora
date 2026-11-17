@@ -17,8 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMoney } from '@/hooks/useMoney';
 import { TASK_STATUSES } from '@/lib/constants';
 import { todayISO } from '@/lib/dates';
-import { cn, initials } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/primitives';
+import { cn } from '@/lib/utils';
+import { StaffAvatar } from '@/components/common/StaffAvatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -181,11 +181,11 @@ export function HousekeepingPage() {
                         <div className="flex min-w-0 items-center gap-1.5">
                           {task.assignee ? (
                             <>
-                              <Avatar className="size-5">
-                                <AvatarFallback className="text-[8.5px]">
-                                  {initials(task.assignee.name)}
-                                </AvatarFallback>
-                              </Avatar>
+                              <StaffAvatar
+                                member={task.assignee}
+                                className="size-5"
+                                fallbackClassName="text-[8.5px]"
+                              />
                               <span className="truncate text-[10.5px] text-muted-foreground">
                                 {task.assignee.name}
                               </span>

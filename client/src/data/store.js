@@ -54,18 +54,37 @@ export function mutate(fn) {
   return result;
 }
 
+/** "Remember me" keeps the session in localStorage; otherwise it lasts for the tab. */
 export function readSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+  for (const storage of [sessionStorage, localStorage]) {
+    try {
+      const raw = storage.getItem(SESSION_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Ignore unavailable storage and try the next one.
+    }
   }
+  return null;
 }
 
-export function writeSession(session) {
-  if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  else localStorage.removeItem(SESSION_KEY);
+export function writeSession(session, persist = true) {
+  if (!session) {
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  const target = persist ? localStorage : sessionStorage;
+  const other = persist ? sessionStorage : localStorage;
+  target.setItem(SESSION_KEY, JSON.stringify(session));
+  other.removeItem(SESSION_KEY);
+}
+
+export function isEphemeralSession() {
+  try {
+    return Boolean(sessionStorage.getItem(SESSION_KEY));
+  } catch {
+    return false;
+  }
 }
 
 export function nextId(prefix, items) {

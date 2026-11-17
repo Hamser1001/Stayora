@@ -3,6 +3,7 @@ import {
   BedDouble,
   Brush,
   CalendarDays,
+  FileSpreadsheet,
   LayoutDashboard,
   ReceiptText,
   Settings,
@@ -42,6 +43,7 @@ export const NAV_GROUPS = [
     labelKey: 'nav.system',
     items: [
       { to: '/reports', key: 'reports', icon: BarChart3 },
+      { to: '/data', key: 'data', icon: FileSpreadsheet },
       { to: '/settings', key: 'settings', icon: Settings },
     ],
   },
@@ -50,8 +52,8 @@ export const NAV_GROUPS = [
 export const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 
 export const QUICK_SEARCH_ACTIONS = [
-  { key: 'newReservation', labelKey: 'dashboard.newReservation', to: '/reservations?new=1', icon: CalendarDays },
-  { key: 'addRoom', labelKey: 'rooms.addRoom', to: '/rooms?new=1', icon: BedDouble },
-  { key: 'addGuest', labelKey: 'guests.add', to: '/guests?new=1', icon: Users },
-  { key: 'addExpense', labelKey: 'expenses.add', to: '/expenses?new=1', icon: ReceiptText },
+  { key: 'newReservation', labelKey: 'dashboard.newReservation', to: '/reservations?new=1', icon: CalendarDays, module: 'reservations' },
+  { key: 'addRoom', labelKey: 'rooms.addRoom', to: '/rooms?new=1', icon: BedDouble, module: 'rooms' },
+  { key: 'addGuest', labelKey: 'guests.add', to: '/guests?new=1', icon: Users, module: 'guests' },
+  { key: 'addExpense', labelKey: 'expenses.add', to: '/expenses?new=1', icon: ReceiptText, module: 'expenses' },
 ];

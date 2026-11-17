@@ -29,6 +29,36 @@ export const TASK_TYPES = ['cleaning', 'maintenance', 'inspection', 'linen'];
 export const TASK_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 export const TASK_STATUSES = ['open', 'inProgress', 'completed'];
 export const ROLES = ['owner', 'manager', 'receptionist', 'accountant', 'housekeeping'];
+
+export const MODULES = [
+  'dashboard',
+  'rooms',
+  'reservations',
+  'guests',
+  'payments',
+  'expenses',
+  'housekeeping',
+  'staff',
+  'reports',
+  'settings',
+  'data',
+];
+
+/** Mirrors the server presets; explicit member permissions always win. */
+export const ROLE_MODULES = {
+  owner: MODULES,
+  manager: MODULES.filter((module) => module !== 'settings'),
+  receptionist: ['dashboard', 'rooms', 'reservations', 'guests', 'housekeeping'],
+  accountant: ['dashboard', 'payments', 'expenses', 'reports', 'data'],
+  housekeeping: ['dashboard', 'rooms', 'housekeeping'],
+};
+
+export function permissionsOf(user) {
+  if (!user) return [];
+  if (user.role === 'owner') return MODULES;
+  if (Array.isArray(user.permissions) && user.permissions.length) return user.permissions;
+  return ROLE_MODULES[user.role] || [];
+}
 export const STAFF_STATUSES = ['active', 'invited', 'suspended'];
 export const AMENITIES = [
   'wifi',

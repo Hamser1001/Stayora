@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { env } from './config/env.js';
 import authRouter from './routes/auth.js';
 import reservationsRouter from './routes/reservations.js';
@@ -31,8 +33,26 @@ export function createApp() {
       credentials: true,
     }),
   );
-  // Excel imports are sent as base64 in the JSON body.
+  // Excel imports and avatar uploads are sent as base64 in the JSON body.
   app.use(express.json({ limit: '12mb' }));
+
+  // Profile photos: random, immutable filenames served with strict nosniff.
+  const uploadsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../uploads');
+  app.use(
+    '/uploads',
+    (req, res, next) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      next();
+    },
+    express.static(uploadsDir, {
+      index: false,
+      dotfiles: 'deny',
+      maxAge: '30d',
+      immutable: true,
+      fallthrough: true,
+    }),
+  );
 
   // Any mutation invalidates the short-lived read caches (counters, analytics).
   app.use((req, res, next) => {

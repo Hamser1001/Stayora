@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import './i18n';
 import './index.css';
 import App from './App';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <AuthProvider>
           <SettingsProvider>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
             <Toaster
             position="top-right"
             closeButton

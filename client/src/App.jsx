@@ -12,8 +12,11 @@ import { PaymentsPage } from '@/pages/PaymentsPage';
 import { ExpensesPage } from '@/pages/ExpensesPage';
 import { HousekeepingPage } from '@/pages/HousekeepingPage';
 import { StaffPage } from '@/pages/StaffPage';
+import { DataPage } from '@/pages/DataPage';
+import { ChangePasswordPage } from '@/pages/ChangePasswordPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import { LogoMark } from '@/components/brand/Logo';
 
 function BootScreen() {
@@ -30,12 +33,15 @@ function BootScreen() {
   );
 }
 
-function RequireAuth({ children }) {
-  const { isAuthenticated, booting } = useAuth();
+function RequireAuth({ children, allowPasswordChange = false }) {
+  const { isAuthenticated, booting, mustChangePassword } = useAuth();
   const location = useLocation();
   if (booting) return <BootScreen />;
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
+  }
+  if (mustChangePassword && !allowPasswordChange) {
+    return <Navigate to="/change-password" replace />;
   }
   return children;
 }
@@ -59,6 +65,14 @@ export default function App() {
         }
       />
       <Route
+        path="/change-password"
+        element={
+          <RequireAuth allowPasswordChange>
+            <ChangePasswordPage />
+          </RequireAuth>
+        }
+      />
+      <Route
         element={
           <RequireAuth>
             <AppLayout />
@@ -75,6 +89,8 @@ export default function App() {
         <Route path="staff" element={<StaffPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="data" element={<DataPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

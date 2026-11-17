@@ -83,7 +83,9 @@
     "dismiss": "Dismiss",
     "openMenu": "Open menu",
     "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "copied": "Copied",
+    "selectAll": "Select all"
   },
   "nav": {
     "overview": "Overview",
@@ -103,7 +105,8 @@
     "reports": "Reports",
     "settings": "Settings",
     "help": "Help & support",
-    "propertySwitcher": "Switch property"
+    "propertySwitcher": "Switch property",
+    "data": "Import / Export"
   },
   "topbar": {
     "searchPlaceholder": "Search reservations, guests…",
@@ -155,7 +158,27 @@
       "required": "Enter your email and password."
     },
     "signOutTitle": "Signed out",
-    "signOutBody": "You have been signed out of Stayora."
+    "signOutBody": "You have been signed out of Stayora.",
+    "signOut": "Sign out",
+    "changePassword": {
+      "title": "Choose a new password",
+      "body": "You signed in with a temporary password. Set your own password for {{email}} to continue.",
+      "current": "Temporary password",
+      "currentRequired": "Enter your current password.",
+      "next": "New password",
+      "confirm": "Confirm new password",
+      "confirmRequired": "Confirm the new password.",
+      "tooShort": "Use at least 8 characters.",
+      "needsLetter": "Include at least one letter.",
+      "needsNumber": "Include at least one number.",
+      "mismatch": "The two passwords do not match.",
+      "rules": "At least 8 characters, with one letter and one number. Your temporary password stops working immediately.",
+      "submit": "Set password and continue",
+      "success": "Password updated"
+    },
+    "resetTitle": "Reset your password",
+    "resetBody": "Password resets are handled by your workspace owner or manager, so account access stays secure.",
+    "resetHint": "Ask an owner or manager to open Staff & permissions → member menu → Reset password. You will receive a temporary password and choose your own at sign-in."
   },
   "status": {
     "pending": "Pending",
@@ -406,7 +429,19 @@
     "new": "New reservation",
     "edit": "Edit reservation",
     "list": "List",
-    "calendar": "Calendar",
+    "calendar": {
+      "title": "Reservation calendar",
+      "subtitle": "Occupancy and movements for {{month}}",
+      "inHouse": "In house",
+      "arrivals": "Arrivals",
+      "departures": "Departures",
+      "occupancy": "Occupancy",
+      "noActivity": "No movement",
+      "dayDetails": "{{date}} · {{count}} reservations",
+      "legendArrival": "Arrival",
+      "legendDeparture": "Departure",
+      "legendStay": "In house"
+    },
     "searchPlaceholder": "Search reference or guest…",
     "allStatuses": "All statuses",
     "allSources": "All sources",
@@ -496,19 +531,6 @@
       "datesError": "Departure must be after arrival.",
       "guestError": "Select or create a guest.",
       "bedError": "Choose an available bed."
-    },
-    "calendar": {
-      "title": "Reservation calendar",
-      "subtitle": "Occupancy and movements for {{month}}",
-      "inHouse": "In house",
-      "arrivals": "Arrivals",
-      "departures": "Departures",
-      "occupancy": "Occupancy",
-      "noActivity": "No movement",
-      "dayDetails": "{{date}} · {{count}} reservations",
-      "legendArrival": "Arrival",
-      "legendDeparture": "Departure",
-      "legendStay": "In house"
     },
     "statusFilter": "Status",
     "dateFilter": "Stay dates",
@@ -753,7 +775,8 @@
       "housekeeping": "Housekeeping",
       "reports": "Reports",
       "staff": "Staff",
-      "settings": "Settings"
+      "settings": "Settings",
+      "data": "Import / Export"
     },
     "validation": {
       "name": "Enter the member's name.",
@@ -761,7 +784,59 @@
       "role": "Choose a role."
     },
     "ownerLocked": "The owner account cannot be removed.",
-    "searchPlaceholder": "Search team members…"
+    "searchPlaceholder": "Search team members…",
+    "create": "Add member",
+    "createTitle": "Add a team member",
+    "createBody": "Create a login with a secure temporary password. They choose their own password at first sign-in.",
+    "editTitle": "Edit team member",
+    "editBody": "Update their details, role and the modules they can open.",
+    "updatedToast": "{{name}} updated",
+    "moduleAccess": "Module access",
+    "moduleAccessHint": "Tap modules to grant custom access. Leave all off to follow the role preset.",
+    "ownerFullAccess": "The owner always keeps full access.",
+    "useRoleDefaults": "Role defaults",
+    "customAccessNote": "{{count}} custom module(s) selected.",
+    "rolePresetNote": "Following the {{role}} preset.",
+    "tempPasswordNotice": "A temporary password is generated automatically and shown once after saving.",
+    "credentialsTitle": "Temporary password",
+    "credentialsBody": "Share these credentials with {{name}} securely. The password is shown only once.",
+    "credentialsHint": "They must replace this password at first sign-in. You can generate a new one from the member menu at any time.",
+    "temporaryPassword": "Temporary password",
+    "resetPassword": "Reset password",
+    "suspend": "Suspend account",
+    "reactivate": "Reactivate",
+    "suspendTitle": "Suspend {{name}}?",
+    "suspendBody": "They will be signed out immediately and cannot access the workspace until reactivated.",
+    "reactivateTitle": "Reactivate {{name}}?",
+    "reactivateBody": "They will be able to sign in again with their current password.",
+    "suspendedToast": "{{name}} suspended",
+    "reactivatedToast": "{{name}} reactivated",
+    "actions": "Member actions",
+    "deletePermanently": "Delete permanently",
+    "pendingPassword": "Temp password",
+    "allModules": "All modules",
+    "customModules": "Custom access · {{count}} modules",
+    "rolePresetModules": "Role preset",
+    "activity": {
+      "open": "View activity",
+      "subtitle": "Sign-ins and actions recorded for this member.",
+      "emptyTitle": "No activity yet",
+      "emptyBody": "Sign-ins, password changes and account updates will appear here.",
+      "actions": {
+        "staff.created": "Account created",
+        "staff.updated": "Profile or access updated",
+        "staff.suspended": "Account suspended",
+        "staff.reactivated": "Account reactivated",
+        "staff.password_reset": "Password reset by an owner or manager",
+        "staff.deleted": "Account deleted",
+        "auth.login": "Signed in",
+        "auth.password_changed": "Password changed",
+        "data.exported": "Exported data to Excel",
+        "data.import_committed": "Imported data from Excel",
+        "auth.avatar_updated": "Updated profile photo",
+        "auth.avatar_removed": "Removed profile photo"
+      }
+    }
   },
   "reports": {
     "title": "Reports & analytics",
@@ -844,7 +919,7 @@
       "title": "Workspace preferences",
       "body": "Language, currency and how numbers are displayed.",
       "language": "Interface language",
-      "languageHint": "Applies to your account only.",
+      "languageHint": "Saved to your account and applied everywhere you sign in.",
       "currency": "Currency",
       "currencyHint": "Used across pricing, payments and reports.",
       "timezone": "Time zone",
@@ -890,20 +965,23 @@
       "allSaved": "Notification preferences updated"
     },
     "danger": {
-      "title": "Danger zone",
-      "body": "These actions affect the whole property.",
-      "reset": "Reset demo data",
-      "resetBody": "Restores the seeded demo workspace and discards local changes.",
-      "resetTitle": "Reset demo data?",
-      "resetBodyConfirm": "All local edits, reservations and payments will be replaced with the original seed.",
-      "resetDone": "Demo data restored",
-      "resetAction": "Reset everything"
+      "title": "Reset settings",
+      "body": "Restore every workspace preference to its defaults.",
+      "reset": "Reset settings",
+      "resetBody": "Restores property details, currency, pricing, preferences and notification defaults. Reservations, guests, payments and staff are not affected.",
+      "resetTitle": "Reset workspace settings?",
+      "resetBodyConfirm": "Property details, currency, pricing rules and notification preferences return to their defaults. Operational data is untouched.",
+      "resetDone": "Settings restored",
+      "resetAction": "Reset settings"
     },
     "validation": {
       "name": "Enter a property name.",
       "email": "Enter a valid email.",
       "tax": "Tax must be between 0 and 40.",
       "deposit": "Deposit must be between 0 and 100."
+    },
+    "team": {
+      "body": "Invite teammates and control what each person can access."
     }
   },
   "validation": {
@@ -925,7 +1003,10 @@
     "notFoundBody": "The page you're looking for doesn't exist or has moved.",
     "goHome": "Back to dashboard",
     "network": "Network error. Check your connection and try again.",
-    "loadData": "We couldn't load this data."
+    "loadData": "We couldn't load this data.",
+    "crashTitle": "This view stopped responding",
+    "crashBody": "Something unexpected happened while drawing this page. Reload it, or head back to the dashboard — your data is safe.",
+    "reload": "Reload page"
   },
   "notifications": {
     "newBooking": {
@@ -956,5 +1037,76 @@
     "demo": "Demo workspace",
     "help": "Need a hand?",
     "helpBody": "Reach the Stayora team for onboarding support."
+  },
+  "data": {
+    "title": "Data & Excel",
+    "subtitle": "Export the workspace or import records from a spreadsheet.",
+    "collectionCount": "{{count}} collections",
+    "export": "Export",
+    "import": "Import",
+    "exportTitle": "Export to Excel",
+    "exportBody": "Pick the collections to include — each one becomes its own sheet.",
+    "selectedCount": "{{count}} collection(s) selected",
+    "download": "Download .xlsx",
+    "exportNotesTitle": "Good to know",
+    "exportNotes": {
+      "format": "A standard .xlsx workbook, ready for Excel or Google Sheets.",
+      "sheets": "One sheet per collection with labelled column headers.",
+      "scope": "Only data your role can access is included in the export.",
+      "relationships": "Bookings keep their guest and room links with derived names."
+    },
+    "importTitle": "Import from Excel",
+    "importBody": "Download the template, fill it in, then validate the file before importing.",
+    "collection": "Collection",
+    "chooseFile": "Choose an Excel file",
+    "fileHint": ".xlsx or .xls · up to 2,000 rows",
+    "validate": "Validate file",
+    "template": "Template",
+    "importHint": "Validation changes nothing. Duplicates and invalid rows are skipped and reported before you commit.",
+    "noResultTitle": "Nothing validated yet",
+    "noResultBody": "Choose a file and validate it to review non-blocking errors and duplicates before importing.",
+    "previewTitle": "Import preview",
+    "resultTitle": "Import result",
+    "resultFor": "Collection: {{collection}}",
+    "ready": "Ready",
+    "blocked": "Needs fixes",
+    "insertedRows": "{{count}} row(s) imported.",
+    "row": "Row",
+    "column": "Column",
+    "problem": "Problem",
+    "noErrors": "No errors found.",
+    "commitHint": "{{count}} row(s) will be added.",
+    "confirmImport": "Import {{count}} row(s)",
+    "startOver": "Start over",
+    "noAccessTitle": "Access restricted",
+    "noAccess": "Your role does not include data import and export.",
+    "exported": "{{count}} collection(s) exported",
+    "imported": "{{count}} row(s) imported",
+    "rows": "Rows",
+    "valid": "Valid",
+    "invalid": "Invalid",
+    "duplicates": "Duplicates"
+  },
+  "profile": {
+    "pageTitle": "Your profile",
+    "pageSubtitle": "Manage your photo and see the details linked to your account.",
+    "title": "Profile photo",
+    "body": "Shown next to your name in the team list, activity log and across the workspace.",
+    "upload": "Upload photo",
+    "change": "Change photo",
+    "remove": "Remove photo",
+    "removeTitle": "Remove your profile photo?",
+    "removeBody": "Your initials will be shown instead. You can upload a new photo any time.",
+    "cropTitle": "Crop your photo",
+    "cropHint": "Drag to reposition and use the slider to zoom.",
+    "zoom": "Zoom",
+    "save": "Save photo",
+    "uploaded": "Profile photo updated",
+    "removed": "Profile photo removed",
+    "invalidType": "Choose a JPG, PNG or WebP image.",
+    "tooLarge": "That image is too large. Choose one under 8 MB.",
+    "accountTitle": "Account details",
+    "accountBody": "Your name, email and role are managed by an owner or manager.",
+    "language": "Interface language"
   }
 }

@@ -11,6 +11,7 @@ import {
 import { MODULES, permissionsFor, ROLE_PERMISSIONS, sanitizePermissions, STAFF_ROLES } from '../lib/permissions.js';
 import { generateTemporaryPassword, hashPassword } from '../lib/passwords.js';
 import { logActivity, recentActivity } from '../services/activity.js';
+import { removeAvatarImage } from '../services/avatars.js';
 import { nextIdFor } from '../services/snapshot.js';
 
 const router = Router();
@@ -27,6 +28,8 @@ function shape(member) {
 
 function assertManagerCanTouch(actor, target) {
   if (actor.role === 'owner') return;
+  // Managers keep control of their own profile; permission guards still apply.
+  if (actor.id === target.id) return;
   if (target.role === 'owner') {
     fail('The owner account can only be managed by the owner.', 'FORBIDDEN', 403);
   }
@@ -299,6 +302,7 @@ router.delete(
 
     await models.Staff.deleteOne({ id: target.id });
     invalidateMember(target.id);
+    await removeAvatarImage(target.avatarUrl);
 
     await logActivity({
       actor: req.user,

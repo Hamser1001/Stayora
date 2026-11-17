@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, Brush, CalendarCheck, CheckCheck, CreditCard, Sparkles } from 'lucide-react';
 import { api } from '@/api';
 import { useApiResource } from '@/hooks/useApiResource';
-import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/primitives';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,14 @@ const TONES = {
   checkout: 'bg-status-occupied-soft text-status-occupied',
 };
 
+const TARGETS = {
+  newBooking: '/reservations',
+  checkout: '/reservations',
+  payment: '/payments',
+  housekeeping: '/housekeeping',
+  maintenance: '/housekeeping',
+};
+
 function relativeTime(createdAt, t) {
   const minutes = Math.max(1, Math.round((Date.now() - new Date(createdAt).getTime()) / 60000));
   if (minutes < 60) return t('notifications.timeAgoMinutes', { count: minutes });
@@ -34,6 +42,7 @@ function relativeTime(createdAt, t) {
 
 export function NotificationsMenu() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { data, loading, reload } = useApiResource(() => api.notifications.list(), []);
 
@@ -43,6 +52,16 @@ export function NotificationsMenu() {
   const markAll = async () => {
     await api.notifications.markAllRead();
     reload();
+  };
+
+  const openNotification = async (notification) => {
+    setOpen(false);
+    if (!notification.read) {
+      await api.notifications.markRead(notification.id).catch(() => null);
+      reload();
+    }
+    const target = TARGETS[notification.type];
+    if (target) navigate(target);
   };
 
   return (
@@ -112,35 +131,38 @@ export function NotificationsMenu() {
               {notifications.map((notification) => {
                 const Icon = ICONS[notification.type] || Bell;
                 return (
-                  <li
-                    key={notification.id}
-                    className={cn(
-                      'flex gap-3 px-4 py-3 transition-colors hover:bg-muted/50',
-                      !notification.read && 'bg-primary/[0.025]',
-                    )}
-                  >
-                    <span
+                  <li key={notification.id}>
+                    <button
+                      type="button"
+                      onClick={() => openNotification(notification)}
                       className={cn(
-                        'mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg',
-                        TONES[notification.type] || 'bg-muted text-muted-foreground',
+                        'flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50',
+                        !notification.read && 'bg-primary/[0.025]',
                       )}
                     >
-                      <Icon className="size-4" strokeWidth={1.9} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-semibold leading-snug">
-                        {t(`notifications.${notification.type}.title`)}
-                      </p>
-                      <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
-                        {t(`notifications.${notification.type}.body`, notification.data)}
-                      </p>
-                      <p className="mt-1 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
-                        {relativeTime(notification.createdAt, t)}
-                      </p>
-                    </div>
-                    {!notification.read ? (
-                      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-gold" />
-                    ) : null}
+                      <span
+                        className={cn(
+                          'mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg',
+                          TONES[notification.type] || 'bg-muted text-muted-foreground',
+                        )}
+                      >
+                        <Icon className="size-4" strokeWidth={1.9} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12.5px] font-semibold leading-snug">
+                          {t(`notifications.${notification.type}.title`)}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11.5px] text-muted-foreground">
+                          {t(`notifications.${notification.type}.body`, notification.data)}
+                        </span>
+                        <span className="mt-1 block text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
+                          {relativeTime(notification.createdAt, t)}
+                        </span>
+                      </span>
+                      {!notification.read ? (
+                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-gold" />
+                      ) : null}
+                    </button>
                   </li>
                 );
               })}
@@ -148,11 +170,6 @@ export function NotificationsMenu() {
           )}
         </div>
 
-        <div className="border-t border-border/80 p-2">
-          <Button variant="ghost" size="sm" className="w-full justify-center text-[12px]">
-            {t('topbar.viewAll')}
-          </Button>
-        </div>
       </PopoverContent>
     </Popover>
   );

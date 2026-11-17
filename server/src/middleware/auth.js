@@ -24,6 +24,8 @@ export function publicMember(member) {
     role: member.role,
     status: member.status,
     permissions: permissionsFor(member),
+    avatarUrl: member.avatarUrl || '',
+    language: member.language || 'en',
     mustChangePassword: Boolean(member.mustChangePassword),
     lastActive: member.lastActive || null,
     invitedAt: member.invitedAt || null,

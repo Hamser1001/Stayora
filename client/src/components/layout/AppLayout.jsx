@@ -5,6 +5,7 @@ import { Sidebar, SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { TooltipProvider } from '@/components/ui/primitives';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 const COLLAPSE_KEY = 'stayora.sidebar.collapsed';
 
@@ -39,7 +40,9 @@ export function AppLayout() {
           <Topbar onOpenMobileNav={() => setMobileOpen(true)} />
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
             <div className="mx-auto w-full max-w-[1400px]">
-              <Outlet />
+              <ErrorBoundary resetKey={location.pathname} variant="inline">
+                <Outlet />
+              </ErrorBoundary>
             </div>
           </main>
         </div>

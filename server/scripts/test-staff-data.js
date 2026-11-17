@@ -160,10 +160,50 @@ async function main() {
   const mgrLogin = await login(`qa.mgr.${stamp}@stayora.test`, manager2.json.data.temporaryPassword);
   const mgrToken = mgrLogin.json?.data?.token;
   await call('/auth/change-password', { method: 'POST', token: mgrToken, body: { currentPassword: manager2.json.data.temporaryPassword, newPassword: `Manager${stamp}9` } });
+  const mgrSelfEdit = await call(`/staff/${manager2.json.data.member.id}`, {
+    method: 'PATCH',
+    token: mgrToken,
+    body: { name: 'QA Manager Renamed' },
+  });
+  check('manager can edit their own profile', mgrSelfEdit.status === 200, `${mgrSelfEdit.status} ${mgrSelfEdit.json?.message}`);
   const mgrOwnerEdit = await call(`/staff/${owner.id}`, { method: 'PATCH', token: mgrToken, body: { name: 'Hacked' } });
   check('manager cannot edit the owner', mgrOwnerEdit.status === 403);
   const mgrGrant = await call(`/staff/${member.id}`, { method: 'PATCH', token: mgrToken, body: { permissions: ['settings'] } });
   check('manager cannot grant settings access', mgrGrant.status === 403);
+
+  /* --------------------------- Settings & prefs -------------------------- */
+  const languagePref = await call('/auth/preferences', {
+    method: 'PATCH',
+    token: ownerToken,
+    body: { language: 'fr' },
+  });
+  check('language preference is saved to the account', languagePref.json?.data?.user?.language === 'fr');
+  check('saved language is returned on refresh', (await call('/auth/me', { token: ownerToken })).json?.data?.user?.language === 'fr');
+  await call('/auth/preferences', { method: 'PATCH', token: ownerToken, body: { language: 'en' } });
+  check('invalid language is rejected', (await call('/auth/preferences', { method: 'PATCH', token: ownerToken, body: { language: 'de' } })).status === 400);
+
+  const beforeSettings = await call('/settings', { token: ownerToken });
+  const reservationsBeforeReset = (await call('/reservations?pageSize=1', { token: ownerToken })).json?.meta?.total;
+  const currencyPatch = await call('/settings', {
+    method: 'PATCH',
+    token: ownerToken,
+    body: { currency: 'USD', timezone: 'Asia/Tokyo', notifications: { ...beforeSettings.json.data.notifications, digest: true } },
+  });
+  check('currency and timezone are persisted', currencyPatch.json?.data?.currency === 'USD' && currencyPatch.json?.data?.timezone === 'Asia/Tokyo');
+  check('notification preferences are persisted', currencyPatch.json?.data?.notifications?.digest === true);
+
+  const settingsReset = await call('/settings/reset', { method: 'POST', token: ownerToken });
+  check('settings reset restores defaults', settingsReset.json?.data?.currency === beforeSettings.json?.data?.currency);
+  check('settings reset keeps operational data', (await call('/reservations?pageSize=1', { token: ownerToken })).json?.meta?.total === reservationsBeforeReset);
+
+  const notifications = await call('/notifications', { token: ownerToken });
+  const unread = (notifications.json?.data || []).find((entry) => !entry.read);
+  if (unread) {
+    const marked = await call(`/notifications/${unread.id}/read`, { method: 'POST', token: ownerToken });
+    check('notification can be marked read', marked.json?.data?.read === true);
+  } else {
+    check('notification can be marked read', true, 'no unread notification');
+  }
 
   /* ------------------------------- Excel ------------------------------- */
   const collections = await call('/data/collections', { token: ownerToken });
@@ -229,7 +269,11 @@ async function main() {
     { 'Reservation reference': importedReservation?.reference, Amount: 20, Method: 'cash', Date: '2026-11-20' },
   ]);
   const payCommit = await call('/data/import', { method: 'POST', token: ownerToken, body: { collection: 'payments', file: payFile } });
-  check('payment import commits', payCommit.json?.data?.summary?.inserted === 1, JSON.stringify(payCommit.json?.data?.summary));
+  check(
+    'payment import commits',
+    payCommit.json?.data?.summary?.inserted === 1,
+    `${payCommit.status} ${JSON.stringify(payCommit.json?.message)} ${JSON.stringify(payCommit.json?.data?.errors)}`,
+  );
   const paidList = await call(`/reservations?search=${encodeURIComponent('QA Guest')}`, { token: ownerToken });
   const paidReservation = (paidList.json?.data || []).find((entry) => entry.id === importedReservation?.id);
   check('payment updates reservation paid total', paidReservation?.paid === 20, String(paidReservation?.paid));
@@ -237,7 +281,7 @@ async function main() {
   created.payments.push(...(payments.json?.data || []).filter((p) => p.reservationReference === importedReservation?.reference).map((p) => p.id));
 
   /* ------------------------------ Cleanup ------------------------------ */
-  await mongoose.connect(env.mongoUri);
+  await mongoose.connect(process.env.MONGODB_URI || env.mongoUri);
   const guests = await models.Guest.find({ email: guestEmail }).lean();
   const guestIds = guests.map((guest) => guest.id);
   const reservationsToDelete = await models.Reservation.find({ guestId: { $in: guestIds } }).lean();

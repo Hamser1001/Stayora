@@ -83,7 +83,9 @@
     "dismiss": "Ignorer",
     "openMenu": "Ouvrir le menu",
     "collapse": "Réduire la barre latérale",
-    "expand": "Développer la barre latérale"
+    "expand": "Développer la barre latérale",
+    "copied": "Copié",
+    "selectAll": "Tout sélectionner"
   },
   "nav": {
     "overview": "Vue d'ensemble",
@@ -103,7 +105,8 @@
     "reports": "Rapports",
     "settings": "Paramètres",
     "help": "Aide & support",
-    "propertySwitcher": "Changer d'établissement"
+    "propertySwitcher": "Changer d'établissement",
+    "data": "Import / Export"
   },
   "topbar": {
     "searchPlaceholder": "Rechercher réservations, clients…",
@@ -155,7 +158,27 @@
       "required": "Saisissez votre e-mail et votre mot de passe."
     },
     "signOutTitle": "Déconnecté",
-    "signOutBody": "Vous avez été déconnecté de Stayora."
+    "signOutBody": "Vous avez été déconnecté de Stayora.",
+    "signOut": "Se déconnecter",
+    "changePassword": {
+      "title": "Choisissez un nouveau mot de passe",
+      "body": "Vous êtes connecté avec un mot de passe temporaire. Définissez votre propre mot de passe pour {{email}} afin de continuer.",
+      "current": "Mot de passe temporaire",
+      "currentRequired": "Saisissez votre mot de passe actuel.",
+      "next": "Nouveau mot de passe",
+      "confirm": "Confirmer le nouveau mot de passe",
+      "confirmRequired": "Confirmez le nouveau mot de passe.",
+      "tooShort": "Utilisez au moins 8 caractères.",
+      "needsLetter": "Ajoutez au moins une lettre.",
+      "needsNumber": "Ajoutez au moins un chiffre.",
+      "mismatch": "Les deux mots de passe ne correspondent pas.",
+      "rules": "Au moins 8 caractères, avec une lettre et un chiffre. Votre mot de passe temporaire cesse de fonctionner immédiatement.",
+      "submit": "Définir le mot de passe et continuer",
+      "success": "Mot de passe mis à jour"
+    },
+    "resetTitle": "Réinitialiser votre mot de passe",
+    "resetBody": "La réinitialisation est gérée par le propriétaire ou un manager de votre espace, pour la sécurité du compte.",
+    "resetHint": "Demandez à un propriétaire ou manager d’ouvrir Staff & permissions → menu du membre → Réinitialiser le mot de passe. Vous recevrez un mot de passe temporaire et choisirez le vôtre à la connexion."
   },
   "status": {
     "pending": "En attente",
@@ -406,7 +429,19 @@
     "new": "Nouvelle réservation",
     "edit": "Modifier la réservation",
     "list": "Liste",
-    "calendar": "Calendrier",
+    "calendar": {
+      "title": "Calendrier des réservations",
+      "subtitle": "Occupation et mouvements pour {{month}}",
+      "inHouse": "Présents",
+      "arrivals": "Arrivées",
+      "departures": "Départs",
+      "occupancy": "Occupation",
+      "noActivity": "Aucun mouvement",
+      "dayDetails": "{{date}} · {{count}} réservations",
+      "legendArrival": "Arrivée",
+      "legendDeparture": "Départ",
+      "legendStay": "Présent"
+    },
     "searchPlaceholder": "Rechercher une référence ou un client…",
     "allStatuses": "Tous les statuts",
     "allSources": "Toutes les sources",
@@ -496,19 +531,6 @@
       "datesError": "Le départ doit être après l'arrivée.",
       "guestError": "Sélectionnez ou créez un client.",
       "bedError": "Choisissez un lit disponible."
-    },
-    "calendar": {
-      "title": "Calendrier des réservations",
-      "subtitle": "Occupation et mouvements pour {{month}}",
-      "inHouse": "Présents",
-      "arrivals": "Arrivées",
-      "departures": "Départs",
-      "occupancy": "Occupation",
-      "noActivity": "Aucun mouvement",
-      "dayDetails": "{{date}} · {{count}} réservations",
-      "legendArrival": "Arrivée",
-      "legendDeparture": "Départ",
-      "legendStay": "Présent"
     },
     "statusFilter": "Statut",
     "dateFilter": "Dates du séjour",
@@ -753,7 +775,8 @@
       "housekeeping": "Entretien",
       "reports": "Rapports",
       "staff": "Équipe",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "data": "Import / Export"
     },
     "validation": {
       "name": "Saisissez le nom du membre.",
@@ -761,7 +784,59 @@
       "role": "Choisissez un rôle."
     },
     "ownerLocked": "Le compte propriétaire ne peut pas être retiré.",
-    "searchPlaceholder": "Rechercher des membres…"
+    "searchPlaceholder": "Rechercher des membres…",
+    "create": "Ajouter un membre",
+    "createTitle": "Ajouter un membre à l’équipe",
+    "createBody": "Créez un accès avec un mot de passe temporaire sécurisé. Il choisira son propre mot de passe à la première connexion.",
+    "editTitle": "Modifier le membre",
+    "editBody": "Mettez à jour ses informations, son rôle et les modules auxquels il accède.",
+    "updatedToast": "{{name}} mis à jour",
+    "moduleAccess": "Accès aux modules",
+    "moduleAccessHint": "Touchez les modules pour accorder un accès personnalisé. Laissez tout désactivé pour suivre le rôle.",
+    "ownerFullAccess": "Le propriétaire conserve toujours un accès complet.",
+    "useRoleDefaults": "Valeurs du rôle",
+    "customAccessNote": "{{count}} module(s) personnalisé(s) sélectionné(s).",
+    "rolePresetNote": "Accès selon le rôle {{role}}.",
+    "tempPasswordNotice": "Un mot de passe temporaire est généré automatiquement et affiché une seule fois après l’enregistrement.",
+    "credentialsTitle": "Mot de passe temporaire",
+    "credentialsBody": "Transmettez ces identifiants à {{name}} de façon sécurisée. Le mot de passe n’est affiché qu’une fois.",
+    "credentialsHint": "Il devra remplacer ce mot de passe à la première connexion. Vous pouvez en générer un nouveau depuis le menu du membre à tout moment.",
+    "temporaryPassword": "Mot de passe temporaire",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "suspend": "Suspendre le compte",
+    "reactivate": "Réactiver",
+    "suspendTitle": "Suspendre {{name}} ?",
+    "suspendBody": "La personne sera déconnectée immédiatement et ne pourra plus accéder à l’espace de travail jusqu’à sa réactivation.",
+    "reactivateTitle": "Réactiver {{name}} ?",
+    "reactivateBody": "La personne pourra à nouveau se connecter avec son mot de passe actuel.",
+    "suspendedToast": "{{name}} suspendu",
+    "reactivatedToast": "{{name}} réactivé",
+    "actions": "Actions du membre",
+    "deletePermanently": "Supprimer définitivement",
+    "pendingPassword": "Mdp temporaire",
+    "allModules": "Tous les modules",
+    "customModules": "Accès personnalisé · {{count}} modules",
+    "rolePresetModules": "Selon le rôle",
+    "activity": {
+      "open": "Voir l’activité",
+      "subtitle": "Connexions et actions enregistrées pour ce membre.",
+      "emptyTitle": "Aucune activité",
+      "emptyBody": "Les connexions, changements de mot de passe et modifications de compte apparaîtront ici.",
+      "actions": {
+        "staff.created": "Compte créé",
+        "staff.updated": "Profil ou accès modifié",
+        "staff.suspended": "Compte suspendu",
+        "staff.reactivated": "Compte réactivé",
+        "staff.password_reset": "Mot de passe réinitialisé par un propriétaire ou manager",
+        "staff.deleted": "Compte supprimé",
+        "auth.login": "Connexion",
+        "auth.password_changed": "Mot de passe modifié",
+        "data.exported": "Données exportées vers Excel",
+        "data.import_committed": "Données importées depuis Excel",
+        "auth.avatar_updated": "Photo de profil mise à jour",
+        "auth.avatar_removed": "Photo de profil supprimée"
+      }
+    }
   },
   "reports": {
     "title": "Rapports & analyses",
@@ -841,12 +916,12 @@
       "changeLogo": "Remplacer le logo"
     },
     "preferences": {
-      "title": "Préférences de l'espace",
-      "body": "Langue, devise et format des nombres.",
-      "language": "Langue de l'interface",
-      "languageHint": "S'applique uniquement à votre compte.",
+      "title": "Préférences de l’espace",
+      "body": "Langue, devise et affichage des nombres.",
+      "language": "Langue de l’interface",
+      "languageHint": "Enregistré sur votre compte et appliqué partout où vous vous connectez.",
       "currency": "Devise",
-      "currencyHint": "Utilisée pour les tarifs, paiements et rapports.",
+      "currencyHint": "Utilisée dans la tarification, les paiements et les rapports.",
       "timezone": "Fuseau horaire",
       "dateFormat": "Format de date",
       "theme": "Apparence",
@@ -890,20 +965,23 @@
       "allSaved": "Préférences de notification mises à jour"
     },
     "danger": {
-      "title": "Zone sensible",
-      "body": "Ces actions affectent tout l'établissement.",
-      "reset": "Réinitialiser les données de démo",
-      "resetBody": "Restaure l'espace de démonstration et efface les modifications locales.",
-      "resetTitle": "Réinitialiser les données ?",
-      "resetBodyConfirm": "Toutes les modifications locales, réservations et paiements seront remplacés par les données d'origine.",
-      "resetDone": "Données de démonstration restaurées",
-      "resetAction": "Tout réinitialiser"
+      "title": "Réinitialiser les paramètres",
+      "body": "Restaurez toutes les préférences de l’espace à leurs valeurs par défaut.",
+      "reset": "Réinitialiser",
+      "resetBody": "Restaure les informations de l’établissement, la devise, la tarification, les préférences et les notifications. Les réservations, clients, paiements et membres ne sont pas modifiés.",
+      "resetTitle": "Réinitialiser les paramètres de l’espace ?",
+      "resetBodyConfirm": "Les informations, la devise, les règles tarifaires et les préférences de notification reviennent à leurs valeurs par défaut. Les données opérationnelles restent intactes.",
+      "resetDone": "Paramètres restaurés",
+      "resetAction": "Réinitialiser"
     },
     "validation": {
       "name": "Saisissez un nom d'établissement.",
       "email": "Saisissez un e-mail valide.",
       "tax": "La taxe doit être comprise entre 0 et 40.",
       "deposit": "L'acompte doit être compris entre 0 et 100."
+    },
+    "team": {
+      "body": "Invitez des collègues et contrôlez ce que chacun peut consulter."
     }
   },
   "validation": {
@@ -925,7 +1003,10 @@
     "notFoundBody": "La page recherchée n'existe pas ou a été déplacée.",
     "goHome": "Retour au tableau de bord",
     "network": "Erreur réseau. Vérifiez votre connexion et réessayez.",
-    "loadData": "Impossible de charger ces données."
+    "loadData": "Impossible de charger ces données.",
+    "crashTitle": "Cette vue a rencontré un problème",
+    "crashBody": "Une erreur inattendue est survenue pendant l’affichage. Rechargez la page ou revenez au tableau de bord — vos données sont intactes.",
+    "reload": "Recharger la page"
   },
   "notifications": {
     "newBooking": {
@@ -956,5 +1037,76 @@
     "demo": "Espace de démonstration",
     "help": "Besoin d'aide ?",
     "helpBody": "Contactez l'équipe Stayora pour un accompagnement."
+  },
+  "data": {
+    "title": "Données & Excel",
+    "subtitle": "Exportez l’espace de travail ou importez des données depuis un tableur.",
+    "collectionCount": "{{count}} collections",
+    "export": "Exporter",
+    "import": "Importer",
+    "exportTitle": "Exporter vers Excel",
+    "exportBody": "Choisissez les collections à inclure — chacune devient une feuille du classeur.",
+    "selectedCount": "{{count}} collection(s) sélectionnée(s)",
+    "download": "Télécharger le .xlsx",
+    "exportNotesTitle": "Bon à savoir",
+    "exportNotes": {
+      "format": "Un classeur .xlsx standard, compatible Excel et Google Sheets.",
+      "sheets": "Une feuille par collection avec les intitulés de colonnes.",
+      "scope": "Seules les données accessibles à votre rôle sont incluses.",
+      "relationships": "Les réservations conservent les liens vers les clients et les chambres."
+    },
+    "importTitle": "Importer depuis Excel",
+    "importBody": "Téléchargez le modèle, remplissez-le, puis validez le fichier avant l’import.",
+    "collection": "Collection",
+    "chooseFile": "Choisir un fichier Excel",
+    "fileHint": ".xlsx ou .xls · 2 000 lignes maximum",
+    "validate": "Valider le fichier",
+    "template": "Modèle",
+    "importHint": "La validation ne modifie rien. Les doublons et les lignes invalides sont ignorés et signalés avant l’import.",
+    "noResultTitle": "Aucun fichier validé",
+    "noResultBody": "Choisissez un fichier puis lancez la validation pour vérifier les erreurs et les doublons avant l’import.",
+    "previewTitle": "Aperçu de l’import",
+    "resultTitle": "Résultat de l’import",
+    "resultFor": "Collection : {{collection}}",
+    "ready": "Prêt",
+    "blocked": "À corriger",
+    "insertedRows": "{{count}} ligne(s) importée(s).",
+    "row": "Ligne",
+    "column": "Colonne",
+    "problem": "Problème",
+    "noErrors": "Aucune erreur détectée.",
+    "commitHint": "{{count}} ligne(s) seront ajoutées.",
+    "confirmImport": "Importer {{count}} ligne(s)",
+    "startOver": "Recommencer",
+    "noAccessTitle": "Accès restreint",
+    "noAccess": "Votre rôle ne permet pas l’import et l’export des données.",
+    "exported": "{{count}} collection(s) exportée(s)",
+    "imported": "{{count}} ligne(s) importée(s)",
+    "rows": "Lignes",
+    "valid": "Valides",
+    "invalid": "Invalides",
+    "duplicates": "Doublons"
+  },
+  "profile": {
+    "pageTitle": "Votre profil",
+    "pageSubtitle": "Gérez votre photo et consultez les informations liées à votre compte.",
+    "title": "Photo de profil",
+    "body": "Affichée à côté de votre nom dans l’équipe, le journal d’activité et tout l’espace.",
+    "upload": "Ajouter une photo",
+    "change": "Changer la photo",
+    "remove": "Supprimer la photo",
+    "removeTitle": "Supprimer votre photo de profil ?",
+    "removeBody": "Vos initiales seront affichées à la place. Vous pourrez ajouter une nouvelle photo à tout moment.",
+    "cropTitle": "Recadrer votre photo",
+    "cropHint": "Faites glisser pour repositionner et utilisez le curseur pour zoomer.",
+    "zoom": "Zoom",
+    "save": "Enregistrer la photo",
+    "uploaded": "Photo de profil mise à jour",
+    "removed": "Photo de profil supprimée",
+    "invalidType": "Choisissez une image JPG, PNG ou WebP.",
+    "tooLarge": "Cette image est trop volumineuse. Choisissez une image de moins de 8 Mo.",
+    "accountTitle": "Informations du compte",
+    "accountBody": "Votre nom, votre e-mail et votre rôle sont gérés par un propriétaire ou un manager.",
+    "language": "Langue de l’interface"
   }
 }

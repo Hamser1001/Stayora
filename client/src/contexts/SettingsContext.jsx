@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '@/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SettingsContext = createContext(null);
 
 const FALLBACK = {
   name: 'Maison Nomade',
   currency: 'EUR',
+  timezone: 'Europe/Paris',
   city: 'Paris',
   country: 'France',
   checkInTime: '15:00',
@@ -18,6 +20,7 @@ const FALLBACK = {
 };
 
 export function SettingsProvider({ children }) {
+  const { isAuthenticated, booting } = useAuth();
   const [settings, setSettings] = useState(FALLBACK);
   const [loading, setLoading] = useState(true);
 
@@ -32,9 +35,18 @@ export function SettingsProvider({ children }) {
     }
   }, []);
 
+  // Workspace settings are private: load them once a session exists, and reset to
+  // safe defaults when signing out. Without this a fresh login kept fallback
+  // currency/property values until the page was reloaded.
   useEffect(() => {
+    if (booting) return;
+    if (!isAuthenticated) {
+      setSettings(FALLBACK);
+      setLoading(false);
+      return;
+    }
     load();
-  }, [load]);
+  }, [booting, isAuthenticated, load]);
 
   const updateSettings = useCallback(async (patch) => {
     const next = await api.settings.update(patch);

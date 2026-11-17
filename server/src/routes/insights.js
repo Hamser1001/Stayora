@@ -14,7 +14,7 @@ import {
   sourceBreakdown,
 } from '../services/selectors.js';
 import { addDays, diffDays } from '../lib/dates.js';
-import { seedDatabase } from '../db/seed.js';
+import { buildSeedDatabase } from '../db/seedData.js';
 import { asyncHandler, fail } from '../middleware/error.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 
@@ -149,8 +149,9 @@ settingsRouter.post(
   '/reset',
   requireAuth,
   asyncHandler(async (req, res) => {
-    await seedDatabase();
-    res.json({ data: await getSettings() });
+    // Reset workspace preferences only — never the operational data.
+    const defaults = buildSeedDatabase().settings;
+    res.json({ data: await saveSettings(defaults) });
   }),
 );
 
@@ -175,5 +176,18 @@ notificationsRouter.post(
     await models.Notification.updateMany({ read: false }, { read: true });
     const list = await models.Notification.find().sort({ createdAt: -1 }).limit(40).lean();
     res.json({ data: list });
+  }),
+);
+
+notificationsRouter.post(
+  '/:id/read',
+  asyncHandler(async (req, res) => {
+    const updated = await models.Notification.findOneAndUpdate(
+      { id: req.params.id },
+      { read: true },
+      { new: true },
+    ).lean();
+    if (!updated) fail('Notification not found.', 'NOT_FOUND', 404);
+    res.json({ data: updated });
   }),
 );

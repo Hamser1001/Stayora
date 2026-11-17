@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Command, Search } from 'lucide-react';
 import { NAV_ITEMS, QUICK_SEARCH_ACTIONS } from './navConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import { permissionsOf } from '@/lib/constants';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -10,6 +12,7 @@ import { cn } from '@/lib/utils';
 export function QuickSearch({ open, onOpenChange }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -18,14 +21,15 @@ export function QuickSearch({ open, onOpenChange }) {
 
   const items = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const navigation = NAV_ITEMS.map((item) => ({
+    const allowed = permissionsOf(user);
+    const navigation = NAV_ITEMS.filter((item) => allowed.includes(item.key)).map((item) => ({
       id: `nav-${item.key}`,
       label: t(`nav.${item.key}`),
       to: item.to,
       icon: item.icon,
       group: t('topbar.quickLinks'),
     }));
-    const actions = QUICK_SEARCH_ACTIONS.map((item) => ({
+    const actions = QUICK_SEARCH_ACTIONS.filter((item) => allowed.includes(item.module)).map((item) => ({
       id: `action-${item.key}`,
       label: t(item.labelKey),
       to: item.to,
@@ -35,7 +39,7 @@ export function QuickSearch({ open, onOpenChange }) {
     const all = [...navigation, ...actions];
     if (!term) return navigation.slice(0, 6);
     return all.filter((item) => item.label.toLowerCase().includes(term));
-  }, [query, t]);
+  }, [query, t, user]);
 
   const go = (to) => {
     onOpenChange(false);

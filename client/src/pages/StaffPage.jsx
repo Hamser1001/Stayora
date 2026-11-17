@@ -1,14 +1,26 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Check, Lock, Minus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+import {
+  Ban,
+  Check,
+  History,
+  KeyRound,
+  Lock,
+  Minus,
+  MoreHorizontal,
+  Pencil,
+  PlayCircle,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+} from 'lucide-react';
 import { api } from '@/api';
 import { useApiResource } from '@/hooks/useApiResource';
+import { useMoney } from '@/hooks/useMoney';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLES } from '@/lib/constants';
-import { formatDateTime } from '@/lib/format';
-import { initials, cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/primitives';
+import { MODULES, ROLE_MODULES, ROLES } from '@/lib/constants';
+import { StaffAvatar } from '@/components/common/StaffAvatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -19,6 +31,13 @@ import { IconAction } from '@/components/common/IconAction';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageSkeleton } from '@/components/ui/loading';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,38 +45,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { InviteMemberDialog } from '@/features/staff/InviteMemberDialog';
+import { StaffFormDialog } from '@/features/staff/StaffFormDialog';
+import { StaffCredentialsDialog } from '@/features/staff/StaffCredentialsDialog';
+import { StaffActivitySheet } from '@/features/staff/StaffActivitySheet';
 
-const MODULES = [
-  'dashboard',
-  'rooms',
-  'reservations',
-  'guests',
-  'payments',
-  'expenses',
-  'housekeeping',
-  'reports',
-  'staff',
-  'settings',
-];
-
-const ROLE_ACCESS = {
-  owner: new Set(MODULES),
-  manager: new Set(MODULES.filter((module) => module !== 'settings')),
-  receptionist: new Set(['dashboard', 'rooms', 'reservations', 'guests', 'housekeeping']),
-  accountant: new Set(['dashboard', 'payments', 'expenses', 'reports']),
-  housekeeping: new Set(['dashboard', 'rooms', 'housekeeping']),
-};
-
-export function StaffPage() {
-  const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [removing, setRemoving] = useState(null);
+function useMemberActions({ reload, setCredentials }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
-
-  const { data, loading, error, reload } = useApiResource(() => api.staff.list(), []);
-  const members = useMemo(() => data || [], [data]);
 
   const changeRole = async (member, role) => {
     try {
@@ -69,12 +63,15 @@ export function StaffPage() {
     }
   };
 
-  const removeMember = async () => {
+  const resetPassword = async (member) => {
     setBusy(true);
     try {
-      await api.staff.remove(removing.id);
-      toast.success(t('staff.removed', { name: removing.name }));
-      setRemoving(null);
+      const result = await api.staff.resetPassword(member.id);
+      setCredentials({
+        name: result.member.name,
+        email: result.member.email,
+        password: result.temporaryPassword,
+      });
       await reload();
     } catch (err) {
       toast.error(err.message || t('errors.body'));
@@ -83,8 +80,132 @@ export function StaffPage() {
     }
   };
 
+  return { busy, changeRole, resetPassword };
+}
+
+function MemberMenu({ member, canManage, disabled, onEdit, onActivity, onReset, onStatus, onDelete }) {
+  const { t } = useTranslation();
+  if (!canManage || member.role === 'owner') {
+    return (
+      <span className="grid size-8 place-items-center text-muted-foreground/50" title={t('staff.ownerLocked')}>
+        <Lock className="size-3.5" />
+      </span>
+    );
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={t('staff.actions')} disabled={disabled}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[196px]">
+        <DropdownMenuItem onSelect={() => onEdit(member)}>
+          <Pencil className="size-3.5" />
+          {t('common.edit')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onReset(member)}>
+          <KeyRound className="size-3.5" />
+          {t('staff.resetPassword')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onActivity(member)}>
+          <History className="size-3.5" />
+          {t('staff.activity.open')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {member.status === 'suspended' ? (
+          <DropdownMenuItem onSelect={() => onStatus(member, 'active')}>
+            <PlayCircle className="size-3.5" />
+            {t('staff.reactivate')}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onSelect={() => onStatus(member, 'suspended')}>
+            <Ban className="size-3.5" />
+            {t('staff.suspend')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive" onSelect={() => onDelete(member)}>
+          <Trash2 className="size-3.5" />
+          {t('common.delete')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function StaffPage() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const money = useMoney();
+  const canManage = ['owner', 'manager'].includes(user?.role);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [credentials, setCredentials] = useState(null);
+  const [activityMember, setActivityMember] = useState(null);
+  const [removing, setRemoving] = useState(null);
+  const [statusTarget, setStatusTarget] = useState(null);
+  const [working, setWorking] = useState(false);
+
+  const { data, loading, error, reload } = useApiResource(() => api.staff.list(), []);
+  const members = useMemo(() => data || [], [data]);
+  const { busy, changeRole, resetPassword } = useMemberActions({ reload, setCredentials });
+
+  const activeCount = members.filter((member) => member.status === 'active').length;
+
+  const openCreate = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (member) => {
+    setEditing(member);
+    setFormOpen(true);
+  };
+
+  const confirmStatus = async () => {
+    setWorking(true);
+    try {
+      await api.staff.updateStatus(statusTarget.id, statusTarget.nextStatus);
+      toast.success(
+        statusTarget.nextStatus === 'suspended'
+          ? t('staff.suspendedToast', { name: statusTarget.name })
+          : t('staff.reactivatedToast', { name: statusTarget.name }),
+      );
+      setStatusTarget(null);
+      await reload();
+    } catch (err) {
+      toast.error(err.message || t('errors.body'));
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const confirmRemove = async () => {
+    setWorking(true);
+    try {
+      await api.staff.remove(removing.id);
+      toast.success(t('staff.removed', { name: removing.name }));
+      setRemoving(null);
+      await reload();
+    } catch (err) {
+      toast.error(err.message || t('errors.body'));
+    } finally {
+      setWorking(false);
+    }
+  };
+
   if (loading) return <PageSkeleton />;
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
+
+  const actionsFor = (member) => ({
+    onEdit: openEdit,
+    onReset: resetPassword,
+    onActivity: setActivityMember,
+    onStatus: (target, nextStatus) => setStatusTarget({ ...target, nextStatus }),
+    onDelete: setRemoving,
+  });
 
   return (
     <div className="space-y-5">
@@ -94,47 +215,60 @@ export function StaffPage() {
         meta={
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[10.5px] font-semibold text-muted-foreground numeric">
             <span className="size-1.5 rounded-full bg-status-available" />
-            {t('staff.activeMembers', { count: members.length })}
+            {t('staff.activeMembers', { count: activeCount })}
+            <span className="text-muted-foreground/50">/ {members.length}</span>
           </span>
         }
         actions={
-          <Button size="sm" onClick={() => setInviteOpen(true)}>
-            <UserPlus className="size-4" />
-            {t('staff.invite')}
-          </Button>
+          canManage ? (
+            <Button size="sm" onClick={openCreate}>
+              <UserPlus className="size-4" />
+              {t('staff.create')}
+            </Button>
+          ) : null
         }
       />
 
       <RecordList>
         {members.map((member) => {
-          const isMe = member.name === user?.name;
-          const isOwner = member.role === 'owner';
+          const isMe = member.id === user?.id;
+          const owner = member.role === 'owner';
+          const customAccess =
+            member.permissions?.length > 0 &&
+            member.role !== 'owner' &&
+            [...member.permissions].sort().join(',') !==
+              [...(ROLE_MODULES[member.role] || [])].sort().join(',');
           return (
             <RecordRow key={member.id}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <Avatar className="size-9 shrink-0">
-                    <AvatarFallback className="text-[10.5px]">{initials(member.name)}</AvatarFallback>
-                  </Avatar>
+                  <StaffAvatar
+                    member={member}
+                    className="size-9 shrink-0"
+                    fallbackClassName="text-[10.5px]"
+                  />
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 truncate text-[13px] font-semibold leading-tight">
+                    <p className="flex flex-wrap items-center gap-1.5 truncate text-[13px] font-semibold leading-tight">
                       {member.name}
                       {isMe ? (
                         <span className="rounded bg-primary-soft px-1 text-[9px] font-semibold uppercase tracking-wide text-primary">
                           {t('staff.you')}
                         </span>
                       ) : null}
+                      {member.mustChangePassword ? (
+                        <span className="rounded bg-status-reserved-soft px-1 text-[9px] font-semibold uppercase tracking-wide text-status-reserved">
+                          {t('staff.pendingPassword')}
+                        </span>
+                      ) : null}
                     </p>
                     <p className="truncate text-[11px] text-muted-foreground">{member.email}</p>
                   </div>
                 </div>
-                <IconAction
-                  variant="destructive-ghost"
-                  icon={Trash2}
-                  label={t('common.delete')}
-                  className="shrink-0"
-                  disabled={isOwner}
-                  onClick={() => setRemoving(member)}
+                <MemberMenu
+                  member={member}
+                  canManage={canManage}
+                  disabled={busy}
+                  {...actionsFor(member)}
                 />
               </div>
 
@@ -142,28 +276,34 @@ export function StaffPage() {
                 <Select
                   value={member.role}
                   onValueChange={(value) => changeRole(member, value)}
-                  disabled={isOwner}
+                  disabled={!canManage || owner}
                 >
                   <SelectTrigger className="h-8 flex-1 text-[12px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {ROLES.map((role) => (
-                      <SelectItem key={role} value={role}>
+                      <SelectItem key={role} value={role} disabled={role === 'owner' && user?.role !== 'owner'}>
                         {t(`staff.roles.${role}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <StatusBadge status={member.status} dot={false} />
-                {isOwner ? <Lock className="size-3 shrink-0 text-muted-foreground/60" /> : null}
               </div>
 
               <p className="text-[10.5px] text-muted-foreground">
+                <span className="font-medium text-foreground/70">{t('staff.moduleAccess')}:</span>{' '}
+                {owner
+                  ? t('staff.allModules')
+                  : customAccess
+                    ? t('staff.customModules', { count: member.permissions.length })
+                    : t('staff.rolePresetModules')}
+              </p>
+
+              <p className="text-[10.5px] text-muted-foreground">
                 {t('staff.lastActive')} ·{' '}
-                {member.lastActive
-                  ? formatDateTime(member.lastActive, { lang: i18n.language })
-                  : t('staff.never')}
+                {member.lastActive ? money.dateTime(member.lastActive) : t('staff.never')}
               </p>
             </RecordRow>
           );
@@ -176,6 +316,7 @@ export function StaffPage() {
             <TableRow>
               <TableHead>{t('common.name')}</TableHead>
               <TableHead>{t('staff.role')}</TableHead>
+              <TableHead>{t('staff.moduleAccess')}</TableHead>
               <TableHead>{t('staff.status')}</TableHead>
               <TableHead>{t('staff.lastActive')}</TableHead>
               <TableHead className="w-10" />
@@ -183,21 +324,29 @@ export function StaffPage() {
           </TableHeader>
           <TableBody>
             {members.map((member) => {
-              const isMe = member.name === user?.name;
-              const isOwner = member.role === 'owner';
+              const isMe = member.id === user?.id;
+              const owner = member.role === 'owner';
+              const customAccess =
+                member.permissions?.length > 0 &&
+                member.role !== 'owner' &&
+                [...member.permissions].sort().join(',') !==
+                  [...(ROLE_MODULES[member.role] || [])].sort().join(',');
               return (
                 <TableRow key={member.id}>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
-                      <Avatar className="size-8">
-                        <AvatarFallback className="text-[10px]">{initials(member.name)}</AvatarFallback>
-                      </Avatar>
+                      <StaffAvatar member={member} className="size-8" fallbackClassName="text-[10px]" />
                       <div className="min-w-0">
                         <p className="flex items-center gap-1.5 truncate font-medium">
                           {member.name}
                           {isMe ? (
                             <span className="rounded bg-primary-soft px-1 text-[9.5px] font-semibold uppercase tracking-wide text-primary">
                               {t('staff.you')}
+                            </span>
+                          ) : null}
+                          {member.mustChangePassword ? (
+                            <span className="rounded bg-status-reserved-soft px-1 text-[9px] font-semibold uppercase tracking-wide text-status-reserved">
+                              {t('staff.pendingPassword')}
                             </span>
                           ) : null}
                         </p>
@@ -210,7 +359,7 @@ export function StaffPage() {
                       <Select
                         value={member.role}
                         onValueChange={(value) => changeRole(member, value)}
-                        disabled={isOwner}
+                        disabled={!canManage || owner}
                       >
                         <SelectTrigger className="h-7 w-[150px] text-[11.5px]">
                           <SelectValue />
@@ -223,28 +372,29 @@ export function StaffPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {isOwner ? <Lock className="size-3 text-muted-foreground/60" /> : null}
+                      {owner ? <Lock className="size-3 text-muted-foreground/60" /> : null}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-[11.5px] text-muted-foreground">
+                    {owner
+                      ? t('staff.allModules')
+                      : customAccess
+                        ? t('staff.customModules', { count: member.permissions.length })
+                        : t('staff.rolePresetModules')}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={member.status} dot={false} />
                   </TableCell>
                   <TableCell className="text-[12px] text-muted-foreground">
-                    {member.lastActive
-                      ? formatDateTime(member.lastActive, { lang: i18n.language })
-                      : t('staff.never')}
+                    {member.lastActive ? money.dateTime(member.lastActive) : t('staff.never')}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive disabled:text-muted-foreground/40"
-                      disabled={isOwner}
-                      aria-label={t('common.delete')}
-                      onClick={() => setRemoving(member)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    <MemberMenu
+                      member={member}
+                      canManage={canManage}
+                      disabled={busy}
+                      {...actionsFor(member)}
+                    />
                   </TableCell>
                 </TableRow>
               );
@@ -263,6 +413,7 @@ export function StaffPage() {
             <p className="mt-0.5 text-[11.5px] text-muted-foreground">{t('staff.permissionMatrix')}</p>
           </div>
         </div>
+
         <div className="divide-y divide-border/60 lg:hidden">
           {ROLES.map((role) => (
             <div key={role} className="px-4 py-3">
@@ -271,7 +422,7 @@ export function StaffPage() {
                 {t(`staff.roleDescriptions.${role}`)}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {MODULES.filter((module) => ROLE_ACCESS[role]?.has(module)).map((module) => (
+                {MODULES.filter((module) => ROLE_MODULES[role]?.includes(module)).map((module) => (
                   <span
                     key={module}
                     className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground"
@@ -294,7 +445,7 @@ export function StaffPage() {
                 {MODULES.map((module) => (
                   <th
                     key={module}
-                    className="h-9 whitespace-nowrap px-2 text-center text-[10.5px] font-semibold uppercase tracking-[0.05em] text-muted-foreground"
+                    className="h-9 whitespace-nowrap px-2 text-center text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground"
                   >
                     {t(`staff.modules.${module}`)}
                   </th>
@@ -311,7 +462,7 @@ export function StaffPage() {
                     </p>
                   </td>
                   {MODULES.map((module) => {
-                    const allowed = ROLE_ACCESS[role]?.has(module);
+                    const allowed = ROLE_MODULES[role]?.includes(module);
                     return (
                       <td key={module} className="px-2 py-2.5 text-center">
                         {allowed ? (
@@ -329,7 +480,29 @@ export function StaffPage() {
         </div>
       </Card>
 
-      <InviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} onSaved={reload} />
+      <StaffFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        member={editing}
+        onSaved={reload}
+        onCreated={setCredentials}
+      />
+
+      <StaffCredentialsDialog
+        open={Boolean(credentials)}
+        onOpenChange={(open) => {
+          if (!open) setCredentials(null);
+        }}
+        credentials={credentials}
+      />
+
+      <StaffActivitySheet
+        open={Boolean(activityMember)}
+        onOpenChange={(open) => {
+          if (!open) setActivityMember(null);
+        }}
+        member={activityMember}
+      />
 
       <ConfirmDialog
         open={Boolean(removing)}
@@ -338,10 +511,38 @@ export function StaffPage() {
         }}
         title={removing ? t('staff.removeTitle', { name: removing.name }) : ''}
         description={t('staff.removeBody')}
-        confirmLabel={t('common.delete')}
+        confirmLabel={t('staff.deletePermanently')}
         destructive
-        loading={busy}
-        onConfirm={removeMember}
+        loading={working}
+        onConfirm={confirmRemove}
+      />
+
+      <ConfirmDialog
+        open={Boolean(statusTarget)}
+        onOpenChange={(open) => {
+          if (!open) setStatusTarget(null);
+        }}
+        title={
+          statusTarget
+            ? t(
+                statusTarget.nextStatus === 'suspended'
+                  ? 'staff.suspendTitle'
+                  : 'staff.reactivateTitle',
+                { name: statusTarget.name },
+              )
+            : ''
+        }
+        description={
+          statusTarget?.nextStatus === 'suspended'
+            ? t('staff.suspendBody')
+            : t('staff.reactivateBody')
+        }
+        confirmLabel={
+          statusTarget?.nextStatus === 'suspended' ? t('staff.suspend') : t('staff.reactivate')
+        }
+        destructive={statusTarget?.nextStatus === 'suspended'}
+        loading={working}
+        onConfirm={confirmStatus}
       />
     </div>
   );

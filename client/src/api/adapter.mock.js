@@ -1,5 +1,5 @@
 import { ApiError } from './errors';
-import { loadDB, mutate, readSession, writeSession, nextId, audit } from '@/data/store';
+import { isEphemeralSession, loadDB, mutate, readSession, writeSession, nextId, audit } from '@/data/store';
 import {
   bedStatus,
   dashboardSnapshot,
@@ -72,6 +72,32 @@ const mock = {
   mode: 'mock',
 
   auth: {
+    async updatePreferences(payload) {
+      const session = requireSession();
+      const user = { ...session.user, ...payload };
+      writeSession({ ...session, user }, !isEphemeralSession());
+      return { user };
+    },
+    async uploadAvatar(image) {
+      const session = requireSession();
+      const user = { ...session.user, avatarUrl: image };
+      writeSession({ ...session, user }, !isEphemeralSession());
+      mutate((db) => {
+        const member = db.staff.find((entry) => entry.id === session.user.id);
+        if (member) member.avatarUrl = image;
+      });
+      return { user };
+    },
+    async removeAvatar() {
+      const session = requireSession();
+      const user = { ...session.user, avatarUrl: '' };
+      writeSession({ ...session, user }, !isEphemeralSession());
+      mutate((db) => {
+        const member = db.staff.find((entry) => entry.id === session.user.id);
+        if (member) member.avatarUrl = '';
+      });
+      return { user };
+    },
     async login({ email, password }) {
       await delay(null);
       if (!email || !password) fail('Enter your email and password.', 'VALIDATION_ERROR');
@@ -880,6 +906,51 @@ const mock = {
         }),
       );
     },
+    async create(payload) {
+      const member = await this.invite({ ...payload, status: 'active' });
+      return { member: { ...member, mustChangePassword: true }, temporaryPassword: 'DemoTemp2Pass' };
+    },
+    async updateStatus(id, status) {
+      requireSession();
+      return delay(
+        mutate((db) => {
+          const member = db.staff.find((s) => s.id === id);
+          if (!member) fail('Member not found.', 'NOT_FOUND', 404);
+          if (member.role === 'owner') fail('The owner account cannot be suspended.', 'OWNER_LOCKED');
+          member.status = status;
+          audit(db, 'staff.status', 'staff', id, { status });
+          return member;
+        }),
+      );
+    },
+    async resetPassword(id) {
+      requireSession();
+      const member = await this.update(id, { mustChangePassword: true });
+      return { member, temporaryPassword: 'DemoTemp2Pass' };
+    },
+    async activity(id) {
+      const db = loadDB();
+      return delay(
+        (db.audit || [])
+          .filter((entry) => entry.entityId === id)
+          .map((entry) => ({ ...entry, actorId: entry.entityId })),
+      );
+    },
+    async meta() {
+      return delay({ modules: [], rolePermissions: {}, roles: [] });
+    },
+  },
+
+  data: {
+    async collections() {
+      return delay([]);
+    },
+    async importFile() {
+      fail('Excel import needs the live API.', 'MOCK_MODE', 400);
+    },
+    async download() {
+      fail('Excel export needs the live API.', 'MOCK_MODE', 400);
+    },
   },
 
   dashboard: {
@@ -969,6 +1040,17 @@ const mock = {
     async list() {
       const db = loadDB();
       return delay([...db.notifications].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    },
+    async markRead(id) {
+      requireSession();
+      return delay(
+        mutate((db) => {
+          const notification = db.notifications.find((entry) => entry.id === id);
+          if (!notification) fail('Notification not found.', 'NOT_FOUND', 404);
+          notification.read = true;
+          return notification;
+        }),
+      );
     },
     async markAllRead() {
       return delay(

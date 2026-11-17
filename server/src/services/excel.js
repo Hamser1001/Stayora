@@ -401,6 +401,8 @@ export async function buildWorkbook(keys) {
     [],
     ['Sheet', 'Rows'],
     ...info.map((entry) => [entry.name, entry.rows]),
+    [],
+    ['Note', `Each sheet is capped at ${EXPORT_LIMIT.toLocaleString('en-US')} rows per export.`],
   ]);
   XLSX.utils.book_append_sheet(workbook, readme, 'Export info');
 
@@ -412,6 +414,18 @@ export function buildTemplate(collectionKey) {
   if (!def) fail('Unknown collection.', 'UNKNOWN_COLLECTION', 404);
   const workbook = XLSX.utils.book_new();
   const header = def.columns.map((entry) => entry.header);
+  const samples = {
+    name: 'Jane Doe',
+    title: 'Deep clean room 101',
+    vendor: 'City Power',
+    number: '101',
+    roomNumber: '101',
+    reference: 'STY-EXAMPLE',
+    reservationReference: 'STY-EXAMPLE',
+    guestEmail: 'guest@example.com',
+    guestName: 'Jane Doe',
+    notes: '',
+  };
   const example = def.columns.map((entry) => {
     if (entry.key === 'arrival' || entry.key === 'due') return todayISO();
     if (entry.key === 'departure') {
@@ -422,9 +436,10 @@ export function buildTemplate(collectionKey) {
     if (entry.type === 'number') return entry.min ?? 1;
     if (entry.type === 'enum') return entry.values[0];
     if (entry.type === 'email') return 'guest@example.com';
+    if (samples[entry.key] !== undefined) return samples[entry.key];
     return entry.default ?? '';
   });
-  const sheet = XLSX.utils.aoa_to_sheet([header, def.required ? example : []]);
+  const sheet = XLSX.utils.aoa_to_sheet([header, example]);
   sheet['!cols'] = def.columns.map((entry) => ({ wch: Math.max(14, Math.min(34, entry.header.length + 6)) }));
   XLSX.utils.book_append_sheet(workbook, sheet, def.label.slice(0, 31));
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
@@ -478,7 +493,10 @@ export async function importCollection({ collectionKey, matrix, dryRun = true, a
     models.Room.find().lean(),
     models.Bed.find().lean(),
     models.Guest.find().lean(),
-    models.Reservation.find({}, { id: 1, reference: 1, bedId: 1, arrival: 1, departure: 1, status: 1, _id: 0 }).lean(),
+    models.Reservation.find(
+      {},
+      { id: 1, reference: 1, guestId: 1, roomId: 1, bedId: 1, arrival: 1, departure: 1, status: 1, _id: 0 },
+    ).lean(),
   ]);
 
   const roomByNumber = new Map(rooms.map((room) => [norm(room.number), room]));
@@ -589,6 +607,15 @@ export async function importCollection({ collectionKey, matrix, dryRun = true, a
           throw new RowError('Arrival', 'This bed is already booked for these dates.', 'BED_OVERLAP');
         }
         const nights = nightsBetween(parsed.arrival, parsed.departure);
+        // Rows earlier in the same file must also be considered for overlaps.
+        reservations.push({
+          id: `pending_${row}`,
+          bedId: bed.id,
+          arrival: parsed.arrival,
+          departure: parsed.departure,
+          status: parsed.status || 'confirmed',
+        });
+
         extra = {
           guest,
           room,

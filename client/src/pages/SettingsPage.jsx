@@ -19,12 +19,13 @@ import {
 import { api } from '@/api';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { SegmentedControl, SegmentedOption } from '@/components/ui/segmented';
 import { useApiResource } from '@/hooks/useApiResource';
 import { changeLanguage, SUPPORTED_LANGUAGES } from '@/i18n';
 import { CANCELLATION_POLICIES, CURRENCIES } from '@/lib/constants';
-import { initials } from '@/lib/utils';
-import { Avatar, AvatarFallback, Switch, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/primitives';
+import { Switch, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/primitives';
+import { StaffAvatar } from '@/components/common/StaffAvatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -74,6 +75,7 @@ export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { settings, loading, updateSettings, resetSettings } = useSettings();
   const { mode, setMode } = useTheme();
+  const { setUser } = useAuth();
   const [draft, setDraft] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -269,9 +271,15 @@ export function SettingsPage() {
               >
                 <Select
                   value={i18n.language}
-                  onValueChange={(value) => {
+                  onValueChange={async (value) => {
                     changeLanguage(value);
-                    toast.success(t(`common.${value === 'fr' ? 'french' : 'english'}`));
+                    try {
+                      const result = await api.auth.updatePreferences({ language: value });
+                      setUser(result.user);
+                      toast.success(t(`common.${value === 'fr' ? 'french' : 'english'}`));
+                    } catch (err) {
+                      toast.error(err.message || t('errors.body'));
+                    }
                   }}
                 >
                   <SelectTrigger>
@@ -355,6 +363,7 @@ export function SettingsPage() {
               'taxRate',
               'cityTax',
               'deposit',
+              'currency',
               'checkInTime',
               'checkOutTime',
               'cancellationPolicy',
@@ -477,9 +486,7 @@ export function SettingsPage() {
             <div className="space-y-1">
               {team.map((member) => (
                 <div key={member.id} className="flex items-center gap-3 rounded-lg px-1 py-2">
-                  <Avatar className="size-8">
-                    <AvatarFallback className="text-[10px]">{initials(member.name)}</AvatarFallback>
-                  </Avatar>
+                  <StaffAvatar member={member} className="size-8" fallbackClassName="text-[10px]" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12.5px] font-medium">{member.name}</p>
                     <p className="truncate text-[10.5px] text-muted-foreground">{member.email}</p>

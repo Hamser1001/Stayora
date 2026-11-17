@@ -1,8 +1,10 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Building2, ChevronRight, ChevronsLeft, ChevronsRight, LifeBuoy, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { permissionsOf } from '@/lib/constants';
 import { Brand } from '@/components/brand/Logo';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/primitives';
 import { NAV_GROUPS } from './navConfig';
@@ -58,7 +60,15 @@ function NavItem({ item, collapsed, onNavigate }) {
 
 export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile = false }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { settings } = useSettings();
+  const { user } = useAuth();
+  const allowed = permissionsOf(user);
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => allowed.includes(item.key)),
+  })).filter((group) => group.items.length > 0);
+  const canBook = allowed.includes('reservations');
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
@@ -108,7 +118,12 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
         ) : (
           <button
             type="button"
+            onClick={() => {
+              onNavigate?.();
+              navigate('/settings');
+            }}
             className="flex w-full items-center gap-2.5 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2.5 py-2 text-left transition-colors hover:bg-white/[0.08]"
+            aria-label={t('nav.propertySwitcher')}
           >
             <span className="grid size-7 shrink-0 place-items-center rounded-md bg-gold/15 text-gold">
               <Building2 className="size-3.5" />
@@ -127,7 +142,7 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
       </div>
 
       <nav className="relative flex-1 overflow-y-auto overflow-x-hidden px-3.5 pb-4 no-scrollbar">
-        {!collapsed || mobile ? (
+        {canBook && (!collapsed || mobile) ? (
           <NavLink
             to="/reservations?new=1"
             onClick={onNavigate}
@@ -136,7 +151,7 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
             <Plus className="size-4" strokeWidth={2.4} />
             {t('dashboard.newReservation')}
           </NavLink>
-        ) : (
+        ) : canBook ? (
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <NavLink
@@ -148,10 +163,10 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
             </TooltipTrigger>
             <TooltipContent side="right">{t('dashboard.newReservation')}</TooltipContent>
           </Tooltip>
-        )}
+        ) : null}
 
         <div className={cn('space-y-6', collapsed && !mobile && 'space-y-4')}>
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.labelKey}>
               {!collapsed || mobile ? (
                 <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">
@@ -177,7 +192,10 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
 
       <div className={cn('relative shrink-0 px-3.5 pb-4', collapsed && !mobile && 'px-2.5')}>
         {!collapsed || mobile ? (
-          <div className="rounded-lg border border-white/[0.07] bg-white/[0.045] p-3">
+          <a
+            href="mailto:support@stayora.app"
+            className="block rounded-lg border border-white/[0.07] bg-white/[0.045] p-3 transition-colors hover:bg-white/[0.08]"
+          >
             <div className="flex items-start gap-2.5">
               <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-white/10 text-white/70">
                 <LifeBuoy className="size-3.5" />
@@ -189,16 +207,17 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
                 </p>
               </div>
             </div>
-          </div>
+          </a>
         ) : (
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
-              <button
-                type="button"
+              <a
+                href="mailto:support@stayora.app"
+                aria-label={t('footer.help')}
                 className="mx-auto grid size-9 place-items-center rounded-lg text-white/40 hover:bg-white/5 hover:text-white/80"
               >
                 <LifeBuoy className="size-4" />
-              </button>
+              </a>
             </TooltipTrigger>
             <TooltipContent side="right">{t('footer.help')}</TooltipContent>
           </Tooltip>

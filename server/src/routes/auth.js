@@ -6,11 +6,13 @@ import {
   invalidateMember,
   optionalAuth,
   publicMember,
+  requireAuth,
   requireAuthLoose,
   signToken,
 } from '../middleware/auth.js';
 import { hashPassword, validateNewPassword } from '../lib/passwords.js';
 import { logActivity } from '../services/activity.js';
+import { removeAvatarImage, saveAvatarImage } from '../services/avatars.js';
 
 const router = Router();
 
@@ -98,6 +100,78 @@ router.post(
       actor: member,
       action: 'auth.password_changed',
       entity: 'session',
+      entityId: member.id,
+      meta: { email: member.email },
+    });
+
+    res.json({ data: { user: publicMember(member.toObject()) } });
+  }),
+);
+
+/** Per-user preferences (interface language) that follow the account. */
+router.patch(
+  '/preferences',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { language } = req.body || {};
+    if (language !== undefined && !['en', 'fr'].includes(language)) {
+      fail('Choose a supported language.', 'VALIDATION_ERROR');
+    }
+
+    const member = await models.Staff.findOne({ id: req.user.id });
+    if (!member) fail('Your account could not be found.', 'UNAUTHENTICATED', 401);
+    if (language !== undefined) member.language = language;
+    await member.save();
+    invalidateMember(member.id);
+
+    res.json({ data: { user: publicMember(member.toObject()) } });
+  }),
+);
+
+/** Every staff member can manage their own profile photo. */
+router.post(
+  '/profile/avatar',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const member = await models.Staff.findOne({ id: req.user.id });
+    if (!member) fail('Your account could not be found.', 'UNAUTHENTICATED', 401);
+
+    const avatarUrl = await saveAvatarImage(member.id, req.body?.image);
+    const previous = member.avatarUrl;
+    member.avatarUrl = avatarUrl;
+    await member.save();
+    invalidateMember(member.id);
+    if (previous && previous !== avatarUrl) await removeAvatarImage(previous);
+
+    await logActivity({
+      actor: member,
+      action: 'auth.avatar_updated',
+      entity: 'staff',
+      entityId: member.id,
+      meta: { email: member.email },
+    });
+
+    res.json({ data: { user: publicMember(member.toObject()) } });
+  }),
+);
+
+router.delete(
+  '/profile/avatar',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const member = await models.Staff.findOne({ id: req.user.id });
+    if (!member) fail('Your account could not be found.', 'UNAUTHENTICATED', 401);
+
+    const previous = member.avatarUrl;
+    member.avatarUrl = '';
+    await member.save();
+    invalidateMember(member.id);
+    await removeAvatarImage(previous);
+
+    await logActivity({
+      actor: member,
+      action: 'auth.avatar_removed',
+      entity: 'staff',
       entityId: member.id,
       meta: { email: member.email },
     });

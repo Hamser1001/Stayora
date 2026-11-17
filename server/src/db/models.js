@@ -186,8 +186,11 @@ const Staff = model(
       status: { type: String, default: 'active' },
       lastActive: { type: String, default: null },
       invitedAt: { type: String },
+      // Profile
+      avatarUrl: { type: String, default: '' },
       // Access control
       permissions: { type: [String], default: [] },
+      language: { type: String, default: 'en' },
       mustChangePassword: { type: Boolean, default: false },
       tempPasswordIssuedAt: { type: String, default: null },
       passwordUpdatedAt: { type: String, default: null },

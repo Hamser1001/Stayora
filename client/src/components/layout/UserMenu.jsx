@@ -3,10 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChevronDown, LogOut, Settings2, UserRound } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Avatar,
-  AvatarFallback,
-} from '@/components/ui/primitives';
+import { StaffAvatar } from '@/components/common/StaffAvatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,11 +27,11 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-1.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:pr-2">
-        <Avatar className="size-8 ring-1 ring-border">
-          <AvatarFallback className="bg-primary text-[11px] text-primary-foreground">
-            {user?.initials || 'AB'}
-          </AvatarFallback>
-        </Avatar>
+        <StaffAvatar
+          member={user}
+          className="size-8 ring-1 ring-border"
+          fallbackClassName="bg-primary text-[11px] text-primary-foreground"
+        />
         <span className="hidden min-w-0 text-left sm:block">
           <span className="block max-w-[140px] truncate text-[12.5px] font-semibold leading-tight">
             {user?.name}
@@ -52,7 +49,7 @@ export function UserMenu() {
           <p className="truncate text-[11.5px] text-muted-foreground">{user?.email}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate('/settings')}>
+        <DropdownMenuItem onSelect={() => navigate('/profile')}>
           <UserRound />
           {t('topbar.profile')}
         </DropdownMenuItem>

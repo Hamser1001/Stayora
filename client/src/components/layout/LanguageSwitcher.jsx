@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Check, Globe } from 'lucide-react';
 import { changeLanguage, SUPPORTED_LANGUAGES } from '@/i18n';
+import { api } from '@/api';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +14,18 @@ import { cn } from '@/lib/utils';
 
 export function LanguageSwitcher({ compact = false }) {
   const { i18n, t } = useTranslation();
+  const { setUser } = useAuth();
   const active = SUPPORTED_LANGUAGES.find((l) => l.code === i18n.language) || SUPPORTED_LANGUAGES[0];
+
+  const select = async (code) => {
+    changeLanguage(code);
+    try {
+      const result = await api.auth.updatePreferences({ language: code });
+      setUser(result.user);
+    } catch {
+      // The local choice still applies if the account update fails.
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -31,7 +44,7 @@ export function LanguageSwitcher({ compact = false }) {
         {SUPPORTED_LANGUAGES.map((language) => (
           <DropdownMenuItem
             key={language.code}
-            onSelect={() => changeLanguage(language.code)}
+            onSelect={() => select(language.code)}
             className="justify-between"
           >
             <span className="flex items-center gap-2">

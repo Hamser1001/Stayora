@@ -41,7 +41,7 @@ export function formatDate(value, { lang = 'en', style = 'medium' } = {}) {
   return new Intl.DateTimeFormat(localeFor(lang), options).format(date);
 }
 
-export function formatDateTime(value, { lang = 'en' } = {}) {
+export function formatDateTime(value, { lang = 'en', timeZone } = {}) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
@@ -50,6 +50,7 @@ export function formatDateTime(value, { lang = 'en' } = {}) {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
   }).format(date);
 }
 
@@ -70,7 +71,7 @@ export function formatTime(value, { lang = 'en' } = {}) {
 }
 
 /** Locale-aware formatters bound to the active language and workspace currency. */
-export function useFormat(currency = 'EUR') {
+export function useFormat(currency = 'EUR', timeZone) {
   const { i18n } = useTranslation();
   const lang = i18n.language || 'en';
   return {
@@ -79,7 +80,7 @@ export function useFormat(currency = 'EUR') {
     number: (value, opts = {}) => formatNumber(value, { lang, ...opts }),
     percent: (value, opts = {}) => formatPercent(value, { lang, ...opts }),
     date: (value, opts = {}) => formatDate(value, { lang, ...opts }),
-    dateTime: (value, opts = {}) => formatDateTime(value, { lang, ...opts }),
+    dateTime: (value, opts = {}) => formatDateTime(value, { lang, timeZone, ...opts }),
     month: (value, opts = {}) => formatMonth(value, { lang, ...opts }),
     weekday: (value, opts = {}) => formatWeekday(value, { lang, ...opts }),
     time: (value, opts = {}) => formatTime(value, { lang, ...opts }),
