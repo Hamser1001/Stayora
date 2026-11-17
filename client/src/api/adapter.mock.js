@@ -850,7 +850,11 @@ const mock = {
       if (filters.assigneeId) tasks = tasks.filter((t) => t.assigneeId === filters.assigneeId);
       tasks.sort((a, b) => {
         const order = { urgent: 0, high: 1, medium: 2, low: 3 };
-        return (order[a.priority] ?? 9) - (order[b.priority] ?? 9) || a.due.localeCompare(b.due);
+        return (
+          (a.position ?? 0) - (b.position ?? 0) ||
+          (order[a.priority] ?? 9) - (order[b.priority] ?? 9) ||
+          a.due.localeCompare(b.due)
+        );
       });
       return delay(tasks);
     },
@@ -858,6 +862,11 @@ const mock = {
       requireSession();
       return delay(
         mutate((db) => {
+          const openTasks = db.tasks.filter((t) => t.status === 'open');
+          const maxPosition = openTasks.reduce(
+            (max, t) => Math.max(max, Number.isFinite(t.position) ? t.position : -1),
+            -1,
+          );
           const task = {
             id: nextId('tsk', db.tasks),
             type: payload.type || 'cleaning',
@@ -865,6 +874,7 @@ const mock = {
             roomId: payload.roomId,
             priority: payload.priority || 'medium',
             status: 'open',
+            position: Math.max(openTasks.length, maxPosition + 1),
             assigneeId: payload.assigneeId || null,
             due: payload.due || todayISO(),
             description: payload.description || '',
@@ -902,6 +912,42 @@ const mock = {
           }
           audit(db, 'task.updated', 'task', id, { status: task.status });
           return task;
+        }),
+      );
+    },
+    async reorder(updates) {
+      requireSession();
+      return delay(
+        mutate((db) => {
+          if (!Array.isArray(updates) || updates.length === 0) {
+            fail('No task order was provided.', 'VALIDATION_ERROR');
+          }
+          const seen = new Set();
+          updates.forEach((update) => {
+            const task = db.tasks.find((t) => t.id === update?.id);
+            if (!task) fail('Some tasks no longer exist. Refresh and try again.', 'NOT_FOUND', 404);
+            const status = update.status ?? task.status;
+            if (!['open', 'inProgress', 'completed'].includes(status)) {
+              fail('Choose a valid task status.', 'VALIDATION_ERROR');
+            }
+            const position = Number(update.position);
+            if (!Number.isFinite(position) || position < 0) {
+              fail('Task positions must be zero or greater.', 'VALIDATION_ERROR');
+            }
+            const wasCompleted = task.status === 'completed';
+            task.status = status;
+            task.position = position;
+            if (status === 'completed' && !wasCompleted && task.type === 'cleaning') {
+              db.beds
+                .filter((b) => b.roomId === task.roomId && !b.maintenance && !b.outOfService)
+                .forEach((b) => {
+                  b.cleaning = false;
+                });
+            }
+            seen.add(task.id);
+          });
+          audit(db, 'task.reordered', 'task', null, { count: seen.size });
+          return { updated: seen.size };
         }),
       );
     },
@@ -1071,16 +1117,37 @@ const mock = {
     },
   },
 
+  currency: {
+    async rates({ base = 'EUR' } = {}) {
+      // Demo adapter: fixed reference rates so the mock workspace can convert
+      // without a network call. The HTTP adapter uses Frankfurter.
+      const eur = { EUR: 1, USD: 1.0989, GBP: 0.83305, CHF: 0.9233, CAD: 1.5704 };
+      const from = String(base || 'EUR').toUpperCase();
+      const factor = eur[from] || 1;
+      const rates = Object.fromEntries(
+        Object.entries(eur).map(([code, value]) => [code, value / factor]),
+      );
+      return delay({
+        base: from,
+        date: todayISO(),
+        rates,
+        fetchedAt: new Date().toISOString(),
+        cached: true,
+        stale: false,
+      });
+    },
+  },
+
   settings: {
     async get() {
       const db = loadDB();
-      return delay({ ...db.settings });
+      return delay({ baseCurrency: 'EUR', ...db.settings });
     },
     async update(patch) {
       requireSession();
       return delay(
         mutate((db) => {
-          db.settings = { ...db.settings, ...patch };
+          db.settings = { baseCurrency: 'EUR', ...db.settings, ...patch };
           audit(db, 'settings.updated', 'settings', 'workspace', patch);
           return { ...db.settings };
         }),

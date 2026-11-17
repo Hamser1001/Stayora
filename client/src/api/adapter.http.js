@@ -103,6 +103,13 @@ const http = {
     removeAvatar: () => request('/auth/profile/avatar', { method: 'DELETE' }),
   },
 
+  currency: {
+    rates: ({ base, symbols } = {}) =>
+      request('/currency/rates', {
+        params: { base, symbols: symbols?.length ? symbols.join(',') : undefined },
+      }),
+  },
+
   rooms: {
     list: (filters) => request('/rooms', { params: filters }),
     get: (id) => request(`/rooms/${id}`),
@@ -154,6 +161,8 @@ const http = {
     list: (filters) => request('/housekeeping', { params: filters }),
     create: (payload) => request('/housekeeping', { method: 'POST', body: payload }),
     update: (id, patch) => request(`/housekeeping/${id}`, { method: 'PATCH', body: patch }),
+    reorder: (updates) =>
+      request('/housekeeping/reorder', { method: 'PATCH', body: { updates } }),
   },
 
   staff: {

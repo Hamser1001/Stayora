@@ -1,12 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { isFreshRateCache, readRateCache, writeRateCache } from '@/lib/fx';
+import { CURRENCIES } from '@/lib/constants';
 
 const SettingsContext = createContext(null);
 
 const FALLBACK = {
   name: 'Maison Nomade',
   currency: 'EUR',
+  baseCurrency: 'EUR',
   timezone: 'Europe/Paris',
   city: 'Paris',
   country: 'France',
@@ -19,10 +22,22 @@ const FALLBACK = {
   notifications: {},
 };
 
+const EMPTY_FX = {
+  base: 'EUR',
+  rates: null,
+  date: null,
+  fetchedAt: null,
+  stale: false,
+  cached: false,
+  loading: false,
+  error: '',
+};
+
 export function SettingsProvider({ children }) {
   const { isAuthenticated, booting } = useAuth();
   const [settings, setSettings] = useState(FALLBACK);
   const [loading, setLoading] = useState(true);
+  const [fx, setFx] = useState(EMPTY_FX);
 
   const load = useCallback(async () => {
     try {
@@ -48,6 +63,72 @@ export function SettingsProvider({ children }) {
     load();
   }, [booting, isAuthenticated, load]);
 
+  const baseCurrency = String(settings?.baseCurrency || 'EUR').toUpperCase();
+
+  /** Rates for the ledger's base currency, with a localStorage fallback. */
+  const loadRates = useCallback(
+    async (base, { force = false } = {}) => {
+      if (!isAuthenticated) return;
+      const code = String(base || 'EUR').toUpperCase();
+      const cached = readRateCache(code);
+      // A snapshot that predates a newly selectable currency must be refreshed,
+      // otherwise that currency would silently fall back to the base currency.
+      const coversCurrencies =
+        cached &&
+        CURRENCIES.every(
+          (currency) => currency === code || Number(cached.rates?.[currency]) > 0,
+        );
+      const fresh = coversCurrencies && isFreshRateCache(cached);
+
+      if (cached) {
+        setFx((prev) => ({ ...prev, ...cached, base: code, loading: !fresh, stale: !fresh, error: '' }));
+      } else {
+        setFx((prev) => ({ ...prev, base: code, loading: true, error: '' }));
+      }
+      if (fresh && !force) return;
+
+      try {
+        const data = await api.currency.rates({ base: code });
+        if (!data?.rates) throw new Error('No exchange rates were returned.');
+        const next = {
+          base: String(data.base || code).toUpperCase(),
+          rates: data.rates,
+          date: data.date || null,
+          fetchedAt: data.fetchedAt || new Date().toISOString(),
+          stale: Boolean(data.stale),
+          cached: Boolean(data.cached),
+          loading: false,
+          error: '',
+        };
+        writeRateCache(code, next);
+        setFx(next);
+      } catch (error) {
+        setFx((prev) => ({
+          ...prev,
+          base: code,
+          loading: false,
+          stale: Boolean(prev.rates),
+          error: error?.message || 'Exchange rates are unavailable.',
+        }));
+      }
+    },
+    [isAuthenticated],
+  );
+
+  useEffect(() => {
+    if (booting) return;
+    if (!isAuthenticated) {
+      setFx(EMPTY_FX);
+      return;
+    }
+    loadRates(baseCurrency);
+  }, [booting, isAuthenticated, baseCurrency, loadRates]);
+
+  const refreshRates = useCallback(
+    () => loadRates(baseCurrency, { force: true }),
+    [loadRates, baseCurrency],
+  );
+
   const updateSettings = useCallback(async (patch) => {
     const next = await api.settings.update(patch);
     setSettings(next);
@@ -61,8 +142,18 @@ export function SettingsProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({ settings, setSettings, loading, reload: load, updateSettings, resetSettings }),
-    [settings, loading, load, updateSettings, resetSettings],
+    () => ({
+      settings,
+      setSettings,
+      loading,
+      reload: load,
+      updateSettings,
+      resetSettings,
+      fx,
+      baseCurrency,
+      refreshRates,
+    }),
+    [settings, loading, load, updateSettings, resetSettings, fx, baseCurrency, refreshRates],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

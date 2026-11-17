@@ -49,18 +49,20 @@ export function RefundDialog({ open, onOpenChange, payment, onSaved }) {
   useEffect(() => {
     if (!open || !payment) return;
     setError('');
-    reset({ amount: payment.amount, method: payment.method || 'card' });
+    reset({ amount: money.toDisplay(payment.amount), method: payment.method || 'card' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, payment, reset]);
 
   const onSubmit = async (values) => {
     setError('');
     try {
+      const amount = money.toBase(values.amount);
       await api.payments.refund({
         reservationId: payment.reservationId,
-        amount: values.amount,
+        amount,
         method: values.method,
       });
-      toast.success(t('payments.refunded'), { description: money.currency(values.amount) });
+      toast.success(t('payments.refunded'), { description: money.currency(amount) });
       onOpenChange(false);
       await onSaved();
     } catch (err) {
@@ -87,13 +89,19 @@ export function RefundDialog({ open, onOpenChange, payment, onSaved }) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('payments.amount')} htmlFor="refund-amount" error={errors.amount?.message} required>
+            <Field
+              label={t('payments.amount')}
+              htmlFor="refund-amount"
+              hint={money.currencyCode}
+              error={errors.amount?.message}
+              required
+            >
               <Input
                 id="refund-amount"
                 type="number"
                 min={0}
                 step="0.01"
-                max={payment?.amount}
+                max={payment ? money.toDisplay(payment.amount) : undefined}
                 {...register('amount')}
               />
             </Field>

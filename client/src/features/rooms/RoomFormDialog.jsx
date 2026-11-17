@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { BedDouble, Check } from 'lucide-react';
 import { api } from '@/api';
+import { useMoney } from '@/hooks/useMoney';
 import { AMENITIES, ROOM_AUDIENCES, ROOM_TYPES } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +50,7 @@ function useRoomSchema(t) {
 
 export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
   const { t } = useTranslation();
+  const money = useMoney();
   const [amenities, setAmenities] = useState([]);
   const [error, setError] = useState('');
   const schema = useRoomSchema(t);
@@ -83,7 +85,7 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
         audience: room.audience,
         floor: room.floor,
         bedCount: room.bedCount,
-        pricePerBed: room.pricePerBed,
+        pricePerBed: money.toDisplay(room.pricePerBed),
         notes: room.notes || '',
       });
       setAmenities(room.amenities || []);
@@ -94,7 +96,7 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
         audience: 'mixed',
         floor: 0,
         bedCount: 4,
-        pricePerBed: 30,
+        pricePerBed: money.toDisplay(30),
         notes: '',
       });
       setAmenities(['wifi', 'lockers']);
@@ -112,7 +114,11 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
   const onSubmit = async (values) => {
     setError('');
     try {
-      const payload = { ...values, amenities };
+      const payload = {
+        ...values,
+        pricePerBed: money.toBase(values.pricePerBed),
+        amenities,
+      };
       const saved = room
         ? await api.rooms.update(room.id, payload)
         : await api.rooms.create(payload);
@@ -220,6 +226,7 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
             <Field
               label={t('rooms.pricePerBed')}
               htmlFor="room-price"
+              hint={money.currencyCode}
               error={errors.pricePerBed?.message}
               required
             >

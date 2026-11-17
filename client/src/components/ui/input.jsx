@@ -41,7 +41,9 @@ Label.displayName = 'Label';
 
 function Field({ label, htmlFor, hint, error, required, className, children }) {
   return (
-    <div className={cn('space-y-1.5', className)}>
+    // Fields stretch to their grid row and anchor the control to the bottom, so
+    // a wrapped hint never pushes one field's input below its neighbours'.
+    <div className={cn('flex h-full flex-col gap-1.5', className)}>
       {label ? (
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
           <Label htmlFor={htmlFor}>
@@ -57,8 +59,10 @@ function Field({ label, htmlFor, hint, error, required, className, children }) {
           ) : null}
         </div>
       ) : null}
-      {children}
-      {error ? <p className="text-[11.5px] font-medium text-destructive">{error}</p> : null}
+      <div className="mt-auto space-y-1.5">
+        {children}
+        {error ? <p className="text-[11.5px] font-medium text-destructive">{error}</p> : null}
+      </div>
     </div>
   );
 }

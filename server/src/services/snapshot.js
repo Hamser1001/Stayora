@@ -1,5 +1,6 @@
 import { models } from '../db/models.js';
 import { addDays, todayISO } from '../lib/dates.js';
+import { isSupportedCurrency } from '../lib/currencies.js';
 import { memo } from './cache.js';
 
 /**
@@ -91,16 +92,25 @@ export async function balanceStats() {
 
 export async function getSettings() {
   const setting = await models.Setting.findOne({ key: 'workspace' }).lean();
-  return setting?.data || {};
+  const data = setting?.data || {};
+  // Older workspaces only stored `currency`; their ledger is in EUR.
+  const baseCurrency = data.baseCurrency || 'EUR';
+  return {
+    ...data,
+    baseCurrency,
+    // A currency that Frankfurter cannot quote would only relabel amounts.
+    currency: isSupportedCurrency(data.currency) ? data.currency : baseCurrency,
+  };
 }
 
 export async function saveSettings(data) {
+  const document = { ...data, baseCurrency: data.baseCurrency || 'EUR' };
   const setting = await models.Setting.findOneAndUpdate(
     { key: 'workspace' },
-    { key: 'workspace', data },
+    { key: 'workspace', data: document },
     { new: true, upsert: true, lean: true },
   );
-  return setting.data;
+  return { ...setting.data, baseCurrency: setting.data.baseCurrency || 'EUR' };
 }
 
 /**

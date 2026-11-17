@@ -10,6 +10,7 @@ import { paymentsRouter, expensesRouter } from './routes/finance.js';
 import { housekeepingRouter } from './routes/operations.js';
 import staffRouter from './routes/staff.js';
 import dataRouter from './routes/data.js';
+import currencyRouter from './routes/currency.js';
 import {
   dashboardRouter,
   notificationsRouter,
@@ -76,6 +77,7 @@ export function createApp() {
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/settings', settingsRouter);
+  app.use('/api/currency', currencyRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/data', dataRouter);
 

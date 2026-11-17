@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { api } from '@/api';
+import { useMoney } from '@/hooks/useMoney';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/lib/constants';
 import { todayISO } from '@/lib/dates';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ function useSchema(t) {
 
 export function ExpenseFormDialog({ open, onOpenChange, onSaved, defaultCategory }) {
   const { t } = useTranslation();
+  const money = useMoney();
   const [error, setError] = useState('');
   const schema = useSchema(t);
   const {
@@ -81,7 +83,8 @@ export function ExpenseFormDialog({ open, onOpenChange, onSaved, defaultCategory
   const onSubmit = async (values) => {
     setError('');
     try {
-      await api.expenses.create(values);
+      // Entered in the display currency; stored in the ledger base currency.
+      await api.expenses.create({ ...values, amount: money.toBase(values.amount) });
       toast.success(t('expenses.created'));
       onOpenChange(false);
       await onSaved();
@@ -147,7 +150,13 @@ export function ExpenseFormDialog({ open, onOpenChange, onSaved, defaultCategory
                 )}
               />
             </Field>
-            <Field label={t('expenses.amount')} htmlFor="expense-amount" error={errors.amount?.message} required>
+            <Field
+              label={t('expenses.amount')}
+              htmlFor="expense-amount"
+              hint={money.currencyCode}
+              error={errors.amount?.message}
+              required
+            >
               <Input id="expense-amount" type="number" min={0} step="0.01" {...register('amount')} />
             </Field>
             <Field label={t('expenses.method')}>

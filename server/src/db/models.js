@@ -168,6 +168,8 @@ const Task = model(
       status: { type: String, default: 'open', index: true },
       assigneeId: { type: String, default: null },
       due: { type: String, required: true },
+      // Manual board order within a status column.
+      position: { type: Number, default: 0 },
       description: { type: String, default: '' },
       createdAt: { type: String },
     },

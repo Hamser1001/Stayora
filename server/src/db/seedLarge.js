@@ -415,6 +415,7 @@ export function buildLargeSeed({ seed = 20261116 } = {}) {
     city: 'Paris',
     country: 'France',
     currency: 'EUR',
+    baseCurrency: 'EUR',
     timezone: 'Europe/Paris',
     checkInTime: '15:00',
     checkOutTime: '11:00',

@@ -17,6 +17,7 @@ import { addDays, diffDays } from '../lib/dates.js';
 import { buildSeedDatabase } from '../db/seedData.js';
 import { asyncHandler, fail } from '../middleware/error.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { isSupportedCurrency } from '../lib/currencies.js';
 
 function requireRange(req) {
   const { start, end } = req.query;
@@ -126,10 +127,11 @@ reportsRouter.get(
 
 export const settingsRouter = Router();
 
-settingsRouter.use(requirePermission('settings'));
-
+// Every role reads the active currency, timezone and property details, so the
+// GET is open to signed-in members; changing them stays a settings permission.
 settingsRouter.get(
   '/',
+  requireAuth,
   asyncHandler(async (req, res) => {
     res.json({ data: await getSettings() });
   }),
@@ -137,17 +139,23 @@ settingsRouter.get(
 
 settingsRouter.patch(
   '/',
-  requireAuth,
+  requirePermission('settings'),
   asyncHandler(async (req, res) => {
+    const payload = req.body || {};
+    if (payload.currency !== undefined && !isSupportedCurrency(payload.currency)) {
+      fail('Choose a currency with a published exchange rate.', 'VALIDATION_ERROR');
+    }
     const current = await getSettings();
-    const next = { ...current, ...(req.body || {}) };
+    // Amounts are stored in the base currency; the display currency only
+    // changes how they are converted and formatted.
+    const next = { ...current, ...payload, baseCurrency: current.baseCurrency || 'EUR' };
     res.json({ data: await saveSettings(next) });
   }),
 );
 
 settingsRouter.post(
   '/reset',
-  requireAuth,
+  requirePermission('settings'),
   asyncHandler(async (req, res) => {
     // Reset workspace preferences only — never the operational data.
     const defaults = buildSeedDatabase().settings;

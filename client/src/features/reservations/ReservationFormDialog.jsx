@@ -153,14 +153,14 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
           arrival: reservation.arrival,
           departure: reservation.departure,
           guests: reservation.guests || 1,
-          rate: reservation.rate,
-          discount: reservation.discount || 0,
+          rate: money.toDisplay(reservation.rate),
+          discount: money.toDisplay(reservation.discount || 0),
           source: reservation.source || 'direct',
           deposit: 0,
           notes: reservation.notes || '',
         });
       } else {
-        reset(defaults());
+        reset({ ...defaults(), rate: money.toDisplay(30) });
       }
     })();
   }, [open, reservation, reset]);
@@ -206,7 +206,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
 
   useEffect(() => {
     if (!selectedBed) return;
-    if (!reservation) setValue('rate', selectedBed.pricePerBed);
+    if (!reservation) setValue('rate', money.toDisplay(selectedBed.pricePerBed));
     setValue('guests', Math.min(Number(values.guests) || 1, Math.max(1, selectedRoom?.totalBeds || 1)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBed?.id]);
@@ -231,10 +231,11 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
         arrival: formValues.arrival,
         departure: formValues.departure,
         guests: formValues.guests,
-        rate: formValues.rate,
-        discount: formValues.discount,
+        // Pricing is entered in the display currency; the ledger keeps base amounts.
+        rate: money.toBase(formValues.rate),
+        discount: money.toBase(formValues.discount || 0),
         source: formValues.source,
-        deposit: formValues.deposit,
+        deposit: money.toBase(formValues.deposit || 0),
         notes: formValues.notes,
       };
       const saved = reservation
@@ -490,6 +491,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
               <Field
                 label={t('reservations.form.rate')}
                 htmlFor="res-rate"
+                hint={money.currencyCode}
                 error={errors.rate?.message}
               >
                 <Input id="res-rate" type="number" min={1} step="1" {...register('rate')} />

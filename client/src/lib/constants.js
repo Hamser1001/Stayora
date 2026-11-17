@@ -131,6 +131,7 @@ export const CHART_COLORS = [
   'hsl(var(--chart-5))',
 ];
 
+// Frankfurter covers all but MAD; MAD is filled from the complementary feed.
 export const CURRENCIES = ['EUR', 'USD', 'GBP', 'MAD', 'CHF', 'CAD'];
 
 export const CANCELLATION_POLICIES = ['free24', 'moderate48', 'strict'];

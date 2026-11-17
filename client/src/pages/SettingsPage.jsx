@@ -9,6 +9,7 @@ import {
   Monitor,
   Moon,
   Palette,
+  RefreshCw,
   RotateCcw,
   Save,
   ShieldAlert,
@@ -24,6 +25,7 @@ import { SegmentedControl, SegmentedOption } from '@/components/ui/segmented';
 import { useApiResource } from '@/hooks/useApiResource';
 import { changeLanguage, SUPPORTED_LANGUAGES } from '@/i18n';
 import { CANCELLATION_POLICIES, CURRENCIES } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import { Switch, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/primitives';
 import { StaffAvatar } from '@/components/common/StaffAvatar';
 import { Button } from '@/components/ui/button';
@@ -73,7 +75,7 @@ function SectionCard({ icon: Icon, title, description, children, footer }) {
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const { settings, loading, updateSettings, resetSettings } = useSettings();
+  const { settings, loading, updateSettings, resetSettings, fx, refreshRates } = useSettings();
   const { mode, setMode } = useTheme();
   const { setUser } = useAuth();
   const [draft, setDraft] = useState(settings);
@@ -89,6 +91,27 @@ export function SettingsPage() {
   }, [settings]);
 
   const team = useMemo(() => staff || [], [staff]);
+
+  const baseCurrency = String(settings.baseCurrency || 'EUR').toUpperCase();
+  const draftCurrency = String(draft.currency || baseCurrency).toUpperCase();
+  const draftRate = draftCurrency === baseCurrency ? 1 : Number(fx?.rates?.[draftCurrency]);
+  const hasDraftRate = Number.isFinite(draftRate) && draftRate > 0;
+  const rateNote =
+    draftCurrency === baseCurrency
+      ? t('settings.preferences.baseNote', { currency: baseCurrency })
+      : hasDraftRate
+        ? `${t('settings.preferences.rateLine', {
+            from: baseCurrency,
+            to: draftCurrency,
+            rate: draftRate.toFixed(4),
+            date: fx?.date || '—',
+          })}${fx?.stale ? ` · ${t('settings.preferences.rateStale')}` : ''}`
+        : fx?.loading
+          ? t('settings.preferences.ratesLoading')
+          : t('settings.preferences.rateUnavailable', {
+              currency: draftCurrency,
+              base: baseCurrency,
+            });
 
   const set = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
@@ -297,7 +320,7 @@ export function SettingsPage() {
 
               <Field
                 label={t('settings.preferences.currency')}
-                hint={t('settings.preferences.currencyHint')}
+                hint={t('settings.preferences.currencyHint', { base: baseCurrency })}
               >
                 <Select value={draft.currency} onValueChange={(value) => set({ currency: value })}>
                   <SelectTrigger>
@@ -350,6 +373,22 @@ export function SettingsPage() {
                   ))}
                 </SegmentedControl>
               </Field>
+            </div>
+
+            <div className="mt-4 flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-[11.5px] text-muted-foreground">
+              <RefreshCw
+                className={cn('size-3.5 shrink-0', fx?.loading && 'animate-spin')}
+                strokeWidth={1.9}
+              />
+              <span className="min-w-0 flex-1">{rateNote}</span>
+              <button
+                type="button"
+                onClick={refreshRates}
+                disabled={Boolean(fx?.loading)}
+                className="font-medium text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
+              >
+                {t('settings.preferences.refreshRates')}
+              </button>
             </div>
           </SectionCard>
         </TabsContent>
@@ -410,7 +449,10 @@ export function SettingsPage() {
                   onChange={(event) => set({ deposit: Number(event.target.value) })}
                 />
               </Field>
-              <Field label={t('settings.preferences.currency')}>
+              <Field
+                label={t('settings.preferences.currency')}
+                hint={t('settings.preferences.currencyHint', { base: baseCurrency })}
+              >
                 <Select value={draft.currency} onValueChange={(value) => set({ currency: value })}>
                   <SelectTrigger>
                     <SelectValue />

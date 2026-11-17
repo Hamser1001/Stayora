@@ -79,7 +79,7 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
       if (reservation) {
         reset({
           reservationId: reservation.id,
-          amount: reservation.balance,
+          amount: money.toDisplay(reservation.balance),
           method: 'card',
           date: todayISO(),
           reference: '',
@@ -89,7 +89,7 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
         const first = candidates[0];
         reset({
           reservationId: first?.id || '',
-          amount: first?.balance || 0,
+          amount: money.toDisplay(first?.balance || 0),
           method: 'card',
           date: todayISO(),
           reference: '',
@@ -108,9 +108,11 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
   const onSubmit = async (values) => {
     setError('');
     try {
-      await api.payments.create(values);
+      // Inputs are in the display currency; the ledger stores the base amount.
+      const amount = money.toBase(values.amount);
+      await api.payments.create({ ...values, amount });
       toast.success(t('payments.recorded'), {
-        description: `${money.currency(values.amount)} · ${values.method}`,
+        description: `${money.currency(amount)} · ${values.method}`,
       });
       onOpenChange(false);
       await onSaved?.();
@@ -138,7 +140,7 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
                   onValueChange={(value) => {
                     field.onChange(value);
                     const target = reservations.find((item) => item.id === value);
-                    if (target) setValue('amount', target.balance);
+                    if (target) setValue('amount', money.toDisplay(target.balance));
                   }}
                   disabled={Boolean(reservation)}
                 >
@@ -175,7 +177,13 @@ export function RecordPaymentDialog({ open, onOpenChange, reservation, onSaved }
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('payments.amount')} htmlFor="pay-amount" required error={errors.amount?.message}>
+            <Field
+              label={t('payments.amount')}
+              htmlFor="pay-amount"
+              hint={money.currencyCode}
+              required
+              error={errors.amount?.message}
+            >
               <Input
                 id="pay-amount"
                 type="number"
