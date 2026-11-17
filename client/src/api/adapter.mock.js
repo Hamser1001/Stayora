@@ -78,6 +78,61 @@ const mock = {
       writeSession({ ...session, user }, !isEphemeralSession());
       return { user };
     },
+    async updateProfile(payload) {
+      const session = requireSession();
+      const name = String(payload.name ?? session.user.name ?? '').trim();
+      const email = String(payload.email ?? session.user.email ?? '').trim().toLowerCase();
+      const phone = String(payload.phone ?? session.user.phone ?? '').trim();
+      if (name.length < 2) fail('Enter your full name.', 'VALIDATION_ERROR');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        fail('Enter a valid email address.', 'VALIDATION_ERROR');
+      }
+      if (phone && !/^\+?[\d\s().-]{6,24}$/.test(phone)) {
+        fail('Enter a valid phone number.', 'VALIDATION_ERROR');
+      }
+      const db = loadDB();
+      const taken = db.staff.some(
+        (entry) => entry.id !== session.user.id && entry.email.toLowerCase() === email,
+      );
+      if (taken) fail('That email already belongs to a team member.', 'DUPLICATE_MEMBER');
+
+      const initials = name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0].toUpperCase())
+        .join('');
+      const user = { ...session.user, name, email, phone, initials };
+      writeSession({ ...session, user }, !isEphemeralSession());
+      mutate((store) => {
+        const member = store.staff.find((entry) => entry.id === session.user.id);
+        if (member) Object.assign(member, { name, email, phone });
+      });
+      return { user };
+    },
+    async updatePassword({ currentPassword, newPassword }) {
+      const session = requireSession();
+      if (!currentPassword) fail('Enter your current password.', 'VALIDATION_ERROR');
+      // The demo adapter does not store password hashes; any current password of
+      // valid length stands in for the real credential.
+      if (String(currentPassword).length < 8) {
+        fail('Your current password is incorrect.', 'INVALID_CREDENTIALS', 400);
+      }
+      if (String(newPassword || '').length < 8) {
+        fail('Use at least 8 characters for the new password.', 'WEAK_PASSWORD', 400);
+      }
+      if (!/[A-Za-z]/.test(String(newPassword)) || !/[0-9]/.test(String(newPassword))) {
+        fail('Include at least one letter and one number.', 'WEAK_PASSWORD', 400);
+      }
+      if (String(newPassword) === String(currentPassword)) {
+        fail('Choose a password different from your current one.', 'WEAK_PASSWORD', 400);
+      }
+      mutate((store) => {
+        const member = store.staff.find((entry) => entry.id === session.user.id);
+        if (member) member.passwordUpdatedAt = new Date().toISOString();
+      });
+      return { user: session.user };
+    },
     async uploadAvatar(image) {
       const session = requireSession();
       const user = { ...session.user, avatarUrl: image };
@@ -113,6 +168,8 @@ const mock = {
           name: staff?.name || 'Amina Bensalem',
           email: staff?.email || email,
           role: staff?.role || 'owner',
+          phone: staff?.phone || '',
+          avatarUrl: staff?.avatarUrl || '',
           initials: (staff?.name || 'Amina Bensalem')
             .split(' ')
             .map((p) => p[0])

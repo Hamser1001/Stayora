@@ -21,6 +21,7 @@ export function publicMember(member) {
     id: member.id,
     name: member.name,
     email: member.email,
+    phone: member.phone || '',
     role: member.role,
     status: member.status,
     permissions: permissionsFor(member),

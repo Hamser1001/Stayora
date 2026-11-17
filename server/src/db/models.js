@@ -187,6 +187,7 @@ const Staff = model(
       lastActive: { type: String, default: null },
       invitedAt: { type: String },
       // Profile
+      phone: { type: String, default: '' },
       avatarUrl: { type: String, default: '' },
       // Access control
       permissions: { type: [String], default: [] },

@@ -834,7 +834,8 @@
         "data.exported": "Exported data to Excel",
         "data.import_committed": "Imported data from Excel",
         "auth.avatar_updated": "Updated profile photo",
-        "auth.avatar_removed": "Removed profile photo"
+        "auth.avatar_removed": "Removed profile photo",
+        "auth.profile_updated": "Updated profile details"
       }
     }
   },
@@ -1089,7 +1090,7 @@
   },
   "profile": {
     "pageTitle": "Your profile",
-    "pageSubtitle": "Manage your photo and see the details linked to your account.",
+    "pageSubtitle": "Manage your photo, personal details and password.",
     "title": "Profile photo",
     "body": "Shown next to your name in the team list, activity log and across the workspace.",
     "upload": "Upload photo",
@@ -1105,8 +1106,21 @@
     "removed": "Profile photo removed",
     "invalidType": "Choose a JPG, PNG or WebP image.",
     "tooLarge": "That image is too large. Choose one under 8 MB.",
-    "accountTitle": "Account details",
-    "accountBody": "Your name, email and role are managed by an owner or manager.",
+    "detailsTitle": "Personal details",
+    "detailsBody": "Update the name, email address and phone number used across the workspace.",
+    "nameRequired": "Enter your full name.",
+    "nameTooLong": "Keep your name under 80 characters.",
+    "emailInvalid": "Enter a valid email address.",
+    "phoneInvalid": "Enter a valid phone number.",
+    "detailsSaved": "Profile details updated",
+    "saveDetails": "Save changes",
+    "securityTitle": "Password & security",
+    "securityBody": "Confirm your current password before choosing a new one.",
+    "currentPassword": "Current password",
+    "passwordRules": "At least 8 characters, with one letter and one number.",
+    "savePassword": "Update password",
+    "roleLabel": "Role",
+    "accessNote": "Your role and access are managed by an owner or manager.",
     "language": "Interface language"
   }
 }

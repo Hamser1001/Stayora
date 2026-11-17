@@ -26,7 +26,7 @@ export function validateNewPassword(password, { currentPassword } = {}) {
     fail('Include at least one letter and one number.', 'WEAK_PASSWORD', 400);
   }
   if (currentPassword && value === String(currentPassword)) {
-    fail('Choose a password different from the temporary one.', 'WEAK_PASSWORD', 400);
+    fail('Choose a password different from your current one.', 'WEAK_PASSWORD', 400);
   }
   return value;
 }

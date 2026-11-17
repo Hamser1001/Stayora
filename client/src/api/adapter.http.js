@@ -92,6 +92,10 @@ const http = {
     },
     changePassword: (payload) =>
       request('/auth/change-password', { method: 'POST', body: payload }),
+    updatePassword: (payload) =>
+      request('/auth/profile/password', { method: 'PATCH', body: payload }),
+    updateProfile: (payload) =>
+      request('/auth/profile', { method: 'PATCH', body: payload }),
     updatePreferences: (payload) =>
       request('/auth/preferences', { method: 'PATCH', body: payload }),
     uploadAvatar: (image) =>

@@ -834,7 +834,8 @@
         "data.exported": "Données exportées vers Excel",
         "data.import_committed": "Données importées depuis Excel",
         "auth.avatar_updated": "Photo de profil mise à jour",
-        "auth.avatar_removed": "Photo de profil supprimée"
+        "auth.avatar_removed": "Photo de profil supprimée",
+        "auth.profile_updated": "Informations du profil mises à jour"
       }
     }
   },
@@ -1089,7 +1090,7 @@
   },
   "profile": {
     "pageTitle": "Votre profil",
-    "pageSubtitle": "Gérez votre photo et consultez les informations liées à votre compte.",
+    "pageSubtitle": "Gérez votre photo, vos informations personnelles et votre mot de passe.",
     "title": "Photo de profil",
     "body": "Affichée à côté de votre nom dans l’équipe, le journal d’activité et tout l’espace.",
     "upload": "Ajouter une photo",
@@ -1105,8 +1106,21 @@
     "removed": "Photo de profil supprimée",
     "invalidType": "Choisissez une image JPG, PNG ou WebP.",
     "tooLarge": "Cette image est trop volumineuse. Choisissez une image de moins de 8 Mo.",
-    "accountTitle": "Informations du compte",
-    "accountBody": "Votre nom, votre e-mail et votre rôle sont gérés par un propriétaire ou un manager.",
+    "detailsTitle": "Informations personnelles",
+    "detailsBody": "Mettez à jour le nom, l’adresse e-mail et le téléphone utilisés dans tout l’espace.",
+    "nameRequired": "Saisissez votre nom complet.",
+    "nameTooLong": "Votre nom doit contenir moins de 80 caractères.",
+    "emailInvalid": "Saisissez une adresse e-mail valide.",
+    "phoneInvalid": "Saisissez un numéro de téléphone valide.",
+    "detailsSaved": "Informations du profil mises à jour",
+    "saveDetails": "Enregistrer",
+    "securityTitle": "Mot de passe et sécurité",
+    "securityBody": "Confirmez votre mot de passe actuel avant d’en choisir un nouveau.",
+    "currentPassword": "Mot de passe actuel",
+    "passwordRules": "Au moins 8 caractères, avec une lettre et un chiffre.",
+    "savePassword": "Mettre à jour le mot de passe",
+    "roleLabel": "Rôle",
+    "accessNote": "Votre rôle et vos accès sont gérés par un propriétaire ou un manager.",
     "language": "Langue de l’interface"
   }
 }

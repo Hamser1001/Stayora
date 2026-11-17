@@ -29,6 +29,7 @@ const ICONS = {
   'auth.password_changed': KeyRound,
   'auth.avatar_updated': Camera,
   'auth.avatar_removed': Camera,
+  'auth.profile_updated': Pencil,
   'data.exported': Download,
   'data.import_committed': Upload,
 };
