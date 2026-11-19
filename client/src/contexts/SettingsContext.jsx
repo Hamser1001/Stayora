@@ -37,14 +37,23 @@ export function SettingsProvider({ children }) {
   const { isAuthenticated, booting } = useAuth();
   const [settings, setSettings] = useState(FALLBACK);
   const [loading, setLoading] = useState(true);
+  // Whether the saved workspace has actually been read at least once. Editing
+  // stays disabled until then, so the fallback values above can never be saved
+  // over the real workspace.
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [fx, setFx] = useState(EMPTY_FX);
 
   const load = useCallback(async () => {
     try {
       const result = await api.settings.get();
       setSettings((prev) => ({ ...prev, ...result }));
-    } catch {
-      setSettings(FALLBACK);
+      setLoaded(true);
+      setLoadError('');
+    } catch (error) {
+      // Keep whatever is already known: replacing it with the fallback here
+      // would let a later save write those defaults over the saved workspace.
+      setLoadError(error?.message || '');
     } finally {
       setLoading(false);
     }
@@ -57,6 +66,8 @@ export function SettingsProvider({ children }) {
     if (booting) return;
     if (!isAuthenticated) {
       setSettings(FALLBACK);
+      setLoaded(false);
+      setLoadError('');
       setLoading(false);
       return;
     }
@@ -146,6 +157,8 @@ export function SettingsProvider({ children }) {
       settings,
       setSettings,
       loading,
+      loaded,
+      loadError,
       reload: load,
       updateSettings,
       resetSettings,
@@ -153,7 +166,18 @@ export function SettingsProvider({ children }) {
       baseCurrency,
       refreshRates,
     }),
-    [settings, loading, load, updateSettings, resetSettings, fx, baseCurrency, refreshRates],
+    [
+      settings,
+      loading,
+      loaded,
+      loadError,
+      load,
+      updateSettings,
+      resetSettings,
+      fx,
+      baseCurrency,
+      refreshRates,
+    ],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

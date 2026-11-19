@@ -4,6 +4,7 @@ import { Building2, ChevronRight, ChevronsLeft, ChevronsRight, LifeBuoy, Plus } 
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNewReservation } from '@/contexts/NewReservationContext';
 import { permissionsOf } from '@/lib/constants';
 import { Brand } from '@/components/brand/Logo';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/primitives';
@@ -63,6 +64,7 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
   const navigate = useNavigate();
   const { settings } = useSettings();
   const { user } = useAuth();
+  const { openNewReservation } = useNewReservation();
   const allowed = permissionsOf(user);
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
@@ -143,23 +145,31 @@ export function SidebarContent({ collapsed = false, onNavigate, onToggle, mobile
 
       <nav className="relative flex-1 overflow-y-auto overflow-x-hidden px-3.5 pb-4 no-scrollbar">
         {canBook && (!collapsed || mobile) ? (
-          <NavLink
-            to="/reservations?new=1"
-            onClick={onNavigate}
+          <button
+            type="button"
+            onClick={() => {
+              onNavigate?.();
+              openNewReservation();
+            }}
             className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg bg-gold px-3 py-2.5 text-[13px] font-semibold text-brand-ink shadow-[0_6px_18px_-10px_rgba(201,154,69,0.9)] transition-all hover:bg-gold-hover active:translate-y-px"
           >
             <Plus className="size-4" strokeWidth={2.4} />
             {t('dashboard.newReservation')}
-          </NavLink>
+          </button>
         ) : canBook ? (
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
-              <NavLink
-                to="/reservations?new=1"
+              <button
+                type="button"
+                aria-label={t('dashboard.newReservation')}
+                onClick={() => {
+                  onNavigate?.();
+                  openNewReservation();
+                }}
                 className="mx-auto mb-5 flex size-9 items-center justify-center rounded-lg bg-gold text-brand-ink transition-colors hover:bg-gold-hover"
               >
                 <Plus className="size-4" strokeWidth={2.4} />
-              </NavLink>
+              </button>
             </TooltipTrigger>
             <TooltipContent side="right">{t('dashboard.newReservation')}</TooltipContent>
           </Tooltip>

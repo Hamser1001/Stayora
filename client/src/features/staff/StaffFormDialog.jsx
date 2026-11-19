@@ -110,7 +110,7 @@ export function StaffFormDialog({ open, onOpenChange, member, onSaved, onCreated
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[560px] overflow-y-auto">
+      <DialogContent className="max-w-[560px]">
         <DialogHeader>
           <DialogTitle>{isEdit ? t('staff.editTitle') : t('staff.createTitle')}</DialogTitle>
           <DialogDescription>
@@ -119,7 +119,7 @@ export function StaffFormDialog({ open, onOpenChange, member, onSaved, onCreated
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('staff.name')} htmlFor="staff-name" error={errors.name?.message} required>
               <Input id="staff-name" autoComplete="off" {...register('name')} />
             </Field>

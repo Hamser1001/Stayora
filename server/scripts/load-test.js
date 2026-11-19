@@ -127,7 +127,7 @@ async function main() {
   }
 
   const token = await new Promise((resolve) => {
-    const payload = JSON.stringify({ email: 'amina@stayora.app', password: 'stayora2026' });
+    const payload = JSON.stringify({ email: 'hamza@stayora.app', password: 'stayora2026' });
     const req = http.request(
       `${BASE}/auth/login`,
       {

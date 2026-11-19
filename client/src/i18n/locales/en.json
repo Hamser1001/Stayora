@@ -895,6 +895,7 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Property details, pricing rules and workspace preferences.",
+    "loadFailed": "Your saved settings could not be loaded. Reload the page before saving changes.",
     "tabs": {
       "property": "Property",
       "preferences": "Preferences",

@@ -75,7 +75,8 @@ function SectionCard({ icon: Icon, title, description, children, footer }) {
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const { settings, loading, updateSettings, resetSettings, fx, refreshRates } = useSettings();
+  const { settings, loading, loaded, loadError, updateSettings, resetSettings, fx, refreshRates } =
+    useSettings();
   const { mode, setMode } = useTheme();
   const { setUser } = useAuth();
   const [draft, setDraft] = useState(settings);
@@ -116,6 +117,12 @@ export function SettingsPage() {
   const set = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
 
   const save = async (fields) => {
+    // Saving before the saved values are known would write the placeholder
+    // defaults over the workspace, so it waits for a successful load.
+    if (!loaded) {
+      toast.error(t('settings.loadFailed'));
+      return;
+    }
     const nextErrors = {};
     if (fields.includes('name') && !String(draft.name || '').trim()) {
       nextErrors.name = t('settings.validation.name');
@@ -145,6 +152,10 @@ export function SettingsPage() {
   };
 
   const toggleNotification = async (key, value) => {
+    if (!loaded) {
+      toast.error(t('settings.loadFailed'));
+      return;
+    }
     const notifications = { ...(settings.notifications || {}), [key]: value };
     setDraft((prev) => ({ ...prev, notifications }));
     try {
@@ -177,7 +188,7 @@ export function SettingsPage() {
   }
 
   const saveButton = (fields) => (
-    <Button size="sm" onClick={() => save(fields)} disabled={saving}>
+    <Button size="sm" onClick={() => save(fields)} disabled={saving || !loaded}>
       {saving ? <Spinner /> : <Save className="size-3.5" />}
       {t('common.save')}
     </Button>
@@ -186,6 +197,15 @@ export function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
+
+      {loadError ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/20 bg-destructive-soft px-3 py-2 text-[12px] font-medium text-destructive"
+        >
+          {t('settings.loadFailed')}
+        </p>
+      ) : null}
 
       <Tabs defaultValue="property" className="space-y-4">
         <TabsList>

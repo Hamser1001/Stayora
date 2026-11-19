@@ -7,7 +7,7 @@ async function main() {
   await connectDatabase();
   const counts = await seedDatabase();
   console.table(counts);
-  console.log(`\nDemo workspace ready. Sign in with amina@stayora.app / ${DEMO_PASSWORD}`);
+  console.log(`\nDemo workspace ready. Sign in with hamza@stayora.app / ${DEMO_PASSWORD}`);
   await disconnectDatabase();
 }
 

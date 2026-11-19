@@ -134,13 +134,13 @@ export function RoomFormDialog({ open, onOpenChange, room, onSaved }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[560px] overflow-y-auto">
+      <DialogContent className="max-w-[560px]">
         <DialogHeader>
           <DialogTitle>{room ? t('rooms.editRoom') : t('rooms.addRoom')}</DialogTitle>
           <DialogDescription>{t('rooms.subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label={t('rooms.roomNumber')}

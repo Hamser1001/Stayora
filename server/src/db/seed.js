@@ -7,7 +7,8 @@ const DEMO_PASSWORD = 'stayora2026';
 
 /**
  * Replaces the whole workspace with the deterministic demo dataset.
- * The same helper backs `npm run seed` and the settings "reset" endpoint.
+ * Only `npm run seed` calls this — it is the explicit, destructive reset. Other
+ * writes (settings, records) never go through here.
  */
 export async function seedDatabase() {
   const data = buildSeedDatabase();

@@ -49,7 +49,7 @@ async function assetStatus(path) {
 }
 
 (async () => {
-  const owner = await login('amina@stayora.app');
+  const owner = await login('hamza@stayora.app');
   const receptionist = await login('lea@maisonnomade.com');
 
   const me = await call('/auth/me', { token: owner.token });
@@ -71,7 +71,7 @@ async function assetStatus(path) {
   check('avatar is linked to the account', reflected.json?.data?.user?.avatarUrl === firstUrl);
 
   const staffList = await call('/staff', { token: owner.token });
-  const ownerRow = (staffList.json?.data || []).find((member) => member.email === 'amina@stayora.app');
+  const ownerRow = (staffList.json?.data || []).find((member) => member.email === 'hamza@stayora.app');
   check('avatar appears in the staff list', ownerRow?.avatarUrl === firstUrl);
 
   const replace = await call('/auth/profile/avatar', {

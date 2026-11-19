@@ -34,7 +34,7 @@ async function timedFetch(path, { token, method = 'GET', body } = {}) {
 async function apiChecks() {
   const login = await timedFetch('/auth/login', {
     method: 'POST',
-    body: { email: 'amina@stayora.app', password: 'stayora2026' },
+    body: { email: 'hamza@stayora.app', password: 'stayora2026' },
   });
   const token = login.payload?.data?.token;
   record('POST /auth/login', login.status === 200 && Boolean(token), `${login.ms}ms`);

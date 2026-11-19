@@ -1,6 +1,5 @@
 import { models } from '../db/models.js';
 import { addDays, todayISO } from '../lib/dates.js';
-import { isSupportedCurrency } from '../lib/currencies.js';
 import { memo } from './cache.js';
 
 /**
@@ -90,27 +89,60 @@ export async function balanceStats() {
   };
 }
 
+/**
+ * Saved values are returned exactly as stored. An unset currency falls back to
+ * the base currency, but a stored choice is never swapped for a default here:
+ * that silently reverted valid preferences.
+ */
 export async function getSettings() {
   const setting = await models.Setting.findOne({ key: 'workspace' }).lean();
   const data = setting?.data || {};
-  // Older workspaces only stored `currency`; their ledger is in EUR.
   const baseCurrency = data.baseCurrency || 'EUR';
   return {
     ...data,
     baseCurrency,
-    // A currency that Frankfurter cannot quote would only relabel amounts.
-    currency: isSupportedCurrency(data.currency) ? data.currency : baseCurrency,
+    currency: data.currency || baseCurrency,
   };
 }
 
-export async function saveSettings(data) {
-  const document = { ...data, baseCurrency: data.baseCurrency || 'EUR' };
+const UNSAFE_SETTING_KEYS = new Set(['key', 'data', '_id', '__proto__', 'constructor', 'prototype']);
+
+/**
+ * Applies a partial settings update.
+ *
+ * Only the keys actually sent are written, as individual `data.<key>` paths, so
+ * saving one section never replaces the rest of the document and two people
+ * saving different sections at the same time do not overwrite each other.
+ * Notification flags are merged one by one for the same reason.
+ */
+export async function saveSettings(patch) {
+  const set = {};
+  for (const [key, value] of Object.entries(patch || {})) {
+    if (value === undefined || UNSAFE_SETTING_KEYS.has(key)) continue;
+    if (key === 'notifications') {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        for (const [flag, enabled] of Object.entries(value)) {
+          if (!UNSAFE_SETTING_KEYS.has(flag)) {
+            set[`data.notifications.${flag}`] = Boolean(enabled);
+          }
+        }
+      }
+      continue;
+    }
+    set[`data.${key}`] = value;
+  }
+
+  // Nothing to write: never create or blank a settings document by accident.
+  if (Object.keys(set).length === 0) return getSettings();
+
   const setting = await models.Setting.findOneAndUpdate(
     { key: 'workspace' },
-    { key: 'workspace', data: document },
+    { $set: { key: 'workspace', ...set } },
     { new: true, upsert: true, lean: true },
   );
-  return { ...setting.data, baseCurrency: setting.data.baseCurrency || 'EUR' };
+  const data = setting?.data || {};
+  const baseCurrency = data.baseCurrency || 'EUR';
+  return { ...data, baseCurrency, currency: data.currency || baseCurrency };
 }
 
 /**

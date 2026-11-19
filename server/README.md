@@ -13,7 +13,7 @@ npm run seed                         # loads the demo hostel into MongoDB
 npm run dev:api                      # http://localhost:4000/api
 ```
 
-Demo sign-in: `amina@stayora.app` / `stayora2026`.
+Demo sign-in: `hamza@stayora.app` / `stayora2026`.
 
 ## Scripts
 

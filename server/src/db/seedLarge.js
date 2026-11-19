@@ -435,7 +435,7 @@ export async function seedLargeDatabase({ log = () => {} } = {}) {
   const passwordHash = await bcrypt.hash('stayora2026', 10);
   const now = Date.now();
   const staff = [
-    { id: 'stf_1', name: 'Amina Bensalem', email: 'amina@stayora.app', role: 'owner', status: 'active', lastActive: new Date(now - 120000).toISOString(), invitedAt: new Date(now - 86400000 * 60).toISOString() },
+    { id: 'stf_1', name: 'Amina Bensalem', email: 'hamza@stayora.app', role: 'owner', status: 'active', lastActive: new Date(now - 120000).toISOString(), invitedAt: new Date(now - 86400000 * 60).toISOString() },
     { id: 'stf_2', name: 'Marc Dupont', email: 'marc@maisonnomade.com', role: 'manager', status: 'active', lastActive: new Date(now - 2760000).toISOString(), invitedAt: new Date(now - 86400000 * 50).toISOString() },
     { id: 'stf_3', name: 'Léa Fontaine', email: 'lea@maisonnomade.com', role: 'receptionist', status: 'active', lastActive: new Date(now - 720000).toISOString(), invitedAt: new Date(now - 86400000 * 40).toISOString() },
     { id: 'stf_4', name: 'Karim Haddad', email: 'karim@maisonnomade.com', role: 'receptionist', status: 'active', lastActive: new Date(now - 15600000).toISOString(), invitedAt: new Date(now - 86400000 * 35).toISOString() },

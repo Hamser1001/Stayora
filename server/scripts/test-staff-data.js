@@ -8,7 +8,7 @@ import { env } from '../src/config/env.js';
 import { models } from '../src/db/models.js';
 
 const BASE = process.env.API || 'http://localhost:4000/api';
-const OWNER = { email: 'amina@stayora.app', password: 'stayora2026' };
+const OWNER = { email: 'hamza@stayora.app', password: 'stayora2026' };
 const created = { staff: [], rooms: [], guests: [], reservations: [], payments: [] };
 
 let passed = 0;

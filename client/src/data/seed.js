@@ -58,7 +58,7 @@ const ROOM_SEED = [
 ];
 
 const STAFF_SEED = [
-  { name: 'Amina Bensalem', email: 'amina@stayora.app', role: 'owner', status: 'active', lastActiveMinutes: 2 },
+  { name: 'Amina Bensalem', email: 'hamza@stayora.app', role: 'owner', status: 'active', lastActiveMinutes: 2 },
   { name: 'Marc Dupont', email: 'marc@maisonnomade.com', role: 'manager', status: 'active', lastActiveMinutes: 46 },
   { name: 'Léa Fontaine', email: 'lea@maisonnomade.com', role: 'receptionist', status: 'active', lastActiveMinutes: 12 },
   { name: 'Karim Haddad', email: 'karim@maisonnomade.com', role: 'receptionist', status: 'active', lastActiveMinutes: 260 },

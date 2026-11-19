@@ -58,7 +58,7 @@ const ROOM_SEED = [
 ];
 
 const STAFF_SEED = [
-  { name: 'Amina Bensalem', email: 'amina@stayora.app', role: 'owner', status: 'active', lastActiveMinutes: 2 },
+  { name: 'Amina Bensalem', email: 'hamza@stayora.app', role: 'owner', status: 'active', lastActiveMinutes: 2 },
   { name: 'Marc Dupont', email: 'marc@maisonnomade.com', role: 'manager', status: 'active', lastActiveMinutes: 46 },
   { name: 'Léa Fontaine', email: 'lea@maisonnomade.com', role: 'receptionist', status: 'active', lastActiveMinutes: 12 },
   { name: 'Karim Haddad', email: 'karim@maisonnomade.com', role: 'receptionist', status: 'active', lastActiveMinutes: 260 },
@@ -161,18 +161,22 @@ export function buildSeedDatabase() {
 
   const pushPayment = (reservation, amount, date, suffix = 0) => {
     if (amount <= 0.5) return;
+    const paid = Math.round(amount * 100) / 100;
     paymentIndex += 1;
     payments.push({
       id: `pay_${paymentIndex}`,
       reservationId: reservation.id,
       guestId: reservation.guestId,
-      amount: Math.round(amount * 100) / 100,
+      amount: paid,
       method: pickWeighted(random, METHODS, METHOD_WEIGHTS),
       type: 'payment',
       date,
       reference: `PMT-${(paymentIndex + 3200).toString().padStart(5, '0')}${suffix ? `-${suffix}` : ''}`,
       createdAt: `${date}T10:24:00.000Z`,
     });
+    // `paid` is the ledger's running total; a payment without it left every
+    // seeded reservation looking unpaid.
+    reservation.paid = Math.round(((reservation.paid || 0) + paid) * 100) / 100;
   };
 
   beds.forEach((bed) => {
@@ -209,12 +213,16 @@ export function buildSeedDatabase() {
         guestId: guest.id,
         roomId: room.id,
         bedId: bed.id,
+        guestName: guest.name,
+        roomNumber: room.number,
+        bedLabel: bed.label,
         arrival,
         departure,
         guests: room.bedCount === 1 ? Math.min(2, 1 + Math.floor(random() * 2)) : 1,
         rate: room.pricePerBed,
         discount,
         total,
+        paid: 0,
         source,
         status,
         notes:
@@ -289,12 +297,16 @@ export function buildSeedDatabase() {
         guestId: guest.id,
         roomId: room.id,
         bedId: bed.id,
+        guestName: guest.name,
+        roomNumber: room.number,
+        bedLabel: bed.label,
         arrival: today,
         departure: addDays(today, 2 + index),
         guests: 1,
         rate: room.pricePerBed,
         discount: 0,
         total: room.pricePerBed * (2 + index),
+        paid: 0,
         source: 'direct',
         status: 'confirmed',
         notes: index === 0 ? 'Arriving around 18:30.' : '',
@@ -322,6 +334,14 @@ export function buildSeedDatabase() {
       reference: `RMB-${(5400 + paymentIndex).toString()}`,
       createdAt: `${addDays(today, -3)}T16:10:00.000Z`,
     });
+    // A refund is money that left the ledger, so the running total drops with it.
+    const refunded = reservations.find((entry) => entry.id === refundable.reservationId);
+    if (refunded) {
+      refunded.paid = Math.max(
+        0,
+        Math.round(((refunded.paid || 0) - refundable.amount) * 100) / 100,
+      );
+    }
   }
 
   const EXPENSE_TEMPLATE = [
@@ -362,6 +382,9 @@ export function buildSeedDatabase() {
   }
 
   const housekeepers = STAFF_SEED.filter((s) => s.role === 'housekeeping' || s.role === 'manager');
+  // Seeded tasks get a real position per status so the board order is persisted
+  // from the first render instead of relying on the priority/due fallback.
+  const nextTaskPosition = new Map();
   const tasks = [
     {
       type: 'cleaning',
@@ -443,12 +466,17 @@ export function buildSeedDatabase() {
       due: addDays(today, -2),
       description: '',
     },
-  ].map((task, index) => ({
-    id: `tsk_${index + 1}`,
-    ...task,
-    roomId: task.roomId,
-    createdAt: new Date(now - (index + 1) * 5400000).toISOString(),
-  }));
+  ].map((task, index) => {
+    const position = nextTaskPosition.get(task.status) || 0;
+    nextTaskPosition.set(task.status, position + 1);
+    return {
+      id: `tsk_${index + 1}`,
+      ...task,
+      position,
+      roomId: task.roomId,
+      createdAt: new Date(now - (index + 1) * 5400000).toISOString(),
+    };
+  });
 
   void housekeepers;
 

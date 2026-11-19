@@ -37,6 +37,7 @@ import { useApiResource } from '@/hooks/useApiResource';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMoney } from '@/hooks/useMoney';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useNewReservation } from '@/contexts/NewReservationContext';
 import { buildDateRange } from '@/lib/dates';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/common/StatCard';
@@ -128,6 +129,7 @@ export function DashboardPage() {
   const { settings } = useSettings();
   const money = useMoney();
   const navigate = useNavigate();
+  const { openNewReservation } = useNewReservation();
   const [range, setRange] = useState(() => ({ preset: 'month', ...buildDateRange('month') }));
   const [busyId, setBusyId] = useState(null);
 
@@ -213,7 +215,7 @@ export function DashboardPage() {
         actions={
           <>
             <DateRangeFilter value={range} onChange={setRange} presets={['today', 'week', 'month', 'custom']} />
-            <Button size="sm" onClick={() => navigate('/reservations?new=1')}>
+            <Button size="sm" onClick={openNewReservation}>
               <CalendarPlus className="size-4" />
               {t('dashboard.newReservation')}
             </Button>

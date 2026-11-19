@@ -20,7 +20,7 @@ Generated with `npm run seed:large` (`server/src/db/seedLarge.js`) — determini
 | notifications | 300 | reference real reservations |
 | beds | 237 | belonging to 60 rooms |
 | rooms | 60 | 6 floors, 7 room types |
-| staff | 7 | demo login unchanged (`amina@stayora.app` / `stayora2026`) |
+| staff | 7 | demo login unchanged (`hamza@stayora.app` / `stayora2026`) |
 | **Total** | **41,218** | covered by `GET /api/…` and the UI |
 
 Date span: ~520 days of history plus ~430 days of forward bookings, so dashboards, reports and the calendar all have current data.
@@ -175,4 +175,4 @@ node scripts/load-test.js --requests=150 --concurrency=20 --stress
 node scripts/profile-analytics.js   # per-query timings behind dashboard/reports
 ```
 
-Demo login: `amina@stayora.app` / `stayora2026`.
+Demo login: `hamza@stayora.app` / `stayora2026`.

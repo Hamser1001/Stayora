@@ -41,28 +41,22 @@ Label.displayName = 'Label';
 
 function Field({ label, htmlFor, hint, error, required, className, children }) {
   return (
-    // Fields stretch to their grid row and anchor the control to the bottom, so
-    // a wrapped hint never pushes one field's input below its neighbours'.
-    <div className={cn('flex h-full flex-col gap-1.5', className)}>
+    // One fixed structure for every field: label line, control, then helper text
+    // and errors underneath. Nothing ever shares the label's line, so a long
+    // hint, a description or an optional marker cannot push one control out of
+    // line with the field beside it.
+    <div className={cn('flex flex-col gap-1.5', className)}>
       {label ? (
-        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-          <Label htmlFor={htmlFor}>
-            {label}
-            {required ? <span className="ml-0.5 text-destructive">*</span> : null}
-          </Label>
-          {hint ? (
-            // Hints never break mid-sentence: they stay on one line and drop to
-            // their own row when the label leaves no room.
-            <span className="ml-auto whitespace-nowrap text-right text-[11px] leading-snug text-muted-foreground">
-              {hint}
-            </span>
-          ) : null}
-        </div>
+        <Label htmlFor={htmlFor}>
+          {label}
+          {required ? <span className="ml-0.5 text-destructive">*</span> : null}
+        </Label>
       ) : null}
-      <div className="mt-auto space-y-1.5">
-        {children}
-        {error ? <p className="text-[11.5px] font-medium text-destructive">{error}</p> : null}
-      </div>
+      {children}
+      {hint ? <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p> : null}
+      {error ? (
+        <p className="text-[11.5px] font-medium leading-snug text-destructive">{error}</p>
+      ) : null}
     </div>
   );
 }

@@ -20,6 +20,11 @@ import {
 import { errorHandler, notFound } from './middleware/error.js';
 import { invalidate } from './services/cache.js';
 
+// Dev servers move between localhost, 127.0.0.1 and [::1] and between ports, and
+// a rejected origin reaches the UI as "Network error", so loopback is trusted
+// outside production regardless of the configured CLIENT_ORIGINS list.
+const LOOPBACK_ORIGIN = /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i;
+
 export function createApp() {
   const app = express();
 
@@ -29,6 +34,10 @@ export function createApp() {
         if (!origin || env.origins.length === 0 || env.origins.includes(origin)) {
           return callback(null, true);
         }
+        if (!env.isProduction && LOOPBACK_ORIGIN.test(origin)) {
+          return callback(null, true);
+        }
+        console.warn(`CORS blocked origin: ${origin}`);
         return callback(new Error('Origin not allowed by CORS.'));
       },
       credentials: true,

@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/loading';
-import { Separator } from '@/components/ui/primitives';
 
 function useSchema(t) {
   return z
@@ -247,7 +246,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
           : t('reservations.createdToast', { reference: saved.reference }),
       );
       onOpenChange(false);
-      await onSaved();
+      await onSaved?.(saved);
     } catch (err) {
       setError(err.message || t('errors.body'));
     }
@@ -255,13 +254,13 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-[640px] overflow-y-auto">
+      <DialogContent className="max-w-[640px]">
         <DialogHeader>
           <DialogTitle>{reservation ? t('reservations.edit') : t('reservations.new')}</DialogTitle>
           <DialogDescription>{t('reservations.subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {/* Guest */}
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -326,7 +325,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
                 />
               </Field>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field
                   label={t('reservations.form.guestName')}
                   htmlFor="res-guest-name"
@@ -353,14 +352,12 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
             )}
           </section>
 
-          <Separator />
-
           {/* Stay */}
           <section className="space-y-3">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               {t('reservations.form.staySection')}
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('reservations.arrival')} htmlFor="res-arrival" error={errors.arrival?.message} required>
                 <Controller
                   control={control}
@@ -460,7 +457,7 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
               </p>
             ) : null}
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3">
               <Field
                 label={t('reservations.form.guestsCount')}
                 htmlFor="res-guests"
@@ -499,14 +496,12 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
             </div>
           </section>
 
-          <Separator />
-
           {/* Pricing */}
           <section className="space-y-3">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               {t('reservations.form.pricingSection')}
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label={t('reservations.form.discount')}
                 htmlFor="res-discount"

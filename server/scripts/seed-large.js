@@ -9,7 +9,7 @@ async function main() {
   const counts = await seedLargeDatabase({ log: (message) => console.log(message) });
   console.table(counts);
   console.log(`\nSeeded ${counts.total} documents in ${((Date.now() - started) / 1000).toFixed(1)}s.`);
-  console.log('Demo login: amina@stayora.app / stayora2026');
+  console.log('Demo login: hamza@stayora.app / stayora2026');
   await disconnectDatabase();
 }
 

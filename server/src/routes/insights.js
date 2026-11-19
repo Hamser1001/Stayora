@@ -145,11 +145,9 @@ settingsRouter.patch(
     if (payload.currency !== undefined && !isSupportedCurrency(payload.currency)) {
       fail('Choose a currency with a published exchange rate.', 'VALIDATION_ERROR');
     }
-    const current = await getSettings();
-    // Amounts are stored in the base currency; the display currency only
-    // changes how they are converted and formatted.
-    const next = { ...current, ...payload, baseCurrency: current.baseCurrency || 'EUR' };
-    res.json({ data: await saveSettings(next) });
+    // Only the submitted keys are written: saving one section must never reset
+    // the others, and `baseCurrency` stays whatever the ledger was created in.
+    res.json({ data: await saveSettings(payload) });
   }),
 );
 

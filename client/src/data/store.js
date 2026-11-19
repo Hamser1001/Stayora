@@ -7,8 +7,12 @@ const SCHEMA_VERSION = 1;
 let cache = null;
 
 function normalize(db) {
-  if (!db || db.version !== SCHEMA_VERSION) return buildSeedDatabase();
-  return db;
+  // Only a missing or unreadable workspace is seeded. An older schema keeps its
+  // records and is stamped with the current version — replacing stored data with
+  // the demo seed would silently discard everything the user created.
+  if (!db || typeof db !== 'object') return buildSeedDatabase();
+  if (db.version === SCHEMA_VERSION) return db;
+  return { ...db, version: SCHEMA_VERSION };
 }
 
 export function loadDB() {

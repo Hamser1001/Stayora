@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { isApiError } from '@/api';
 
-const DEMO_EMAIL = 'amina@stayora.app';
+const DEMO_EMAIL = 'hamza@stayora.app';
 const DEMO_PASSWORD = 'stayora2026';
 
 function useLoginSchema(t) {

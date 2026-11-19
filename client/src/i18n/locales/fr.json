@@ -895,6 +895,7 @@
   "settings": {
     "title": "Paramètres",
     "subtitle": "Informations de l'établissement, tarifs et préférences.",
+    "loadFailed": "Vos paramètres enregistrés n'ont pas pu être chargés. Rechargez la page avant d'enregistrer des modifications.",
     "tabs": {
       "property": "Établissement",
       "preferences": "Préférences",
