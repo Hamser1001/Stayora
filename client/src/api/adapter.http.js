@@ -221,6 +221,63 @@ const http = {
     reset: () => request('/settings/reset', { method: 'POST' }),
   },
 
+  /** Metadata only: no endpoint here can return a stored credential. */
+  integrations: {
+    list: () => request('/integrations'),
+    get: (provider) => request(`/integrations/${provider}`),
+    saveCredentials: (provider, payload) =>
+      request(`/integrations/${provider}/credentials`, { method: 'POST', body: payload }),
+    rotate: (provider) => request(`/integrations/${provider}/rotate`, { method: 'POST' }),
+    revoke: (provider) => request(`/integrations/${provider}/credentials`, { method: 'DELETE' }),
+    setEnabled: (provider, enabled) =>
+      request(`/integrations/${provider}`, { method: 'PATCH', body: { enabled } }),
+    test: (provider) => request(`/integrations/${provider}/test`, { method: 'POST' }),
+  },
+
+  /** CMS management. Public website content is served by `/api/public`, not here. */
+  cms: {
+    overview: () => request('/cms'),
+    sectionTypes: () => request('/cms/section-types'),
+    site: () => request('/cms/site'),
+    updateSite: (patch) => request('/cms/site', { method: 'PATCH', body: patch }),
+    publishSite: () => request('/cms/site/publish', { method: 'POST' }),
+    unpublishSite: () => request('/cms/site/unpublish', { method: 'POST' }),
+    pages: () => request('/cms/pages'),
+    page: (id) => request(`/cms/pages/${id}`),
+    createPage: (payload) => request('/cms/pages', { method: 'POST', body: payload }),
+    updatePage: (id, payload) => request(`/cms/pages/${id}`, { method: 'PATCH', body: payload }),
+    deletePage: (id) => request(`/cms/pages/${id}`, { method: 'DELETE' }),
+    publishPage: (id) => request(`/cms/pages/${id}/publish`, { method: 'POST' }),
+    unpublishPage: (id) => request(`/cms/pages/${id}/unpublish`, { method: 'POST' }),
+    reorderPages: (items) => request('/cms/pages/reorder', { method: 'POST', body: { items } }),
+    sections: (pageId) => request(`/cms/pages/${pageId}/sections`),
+    createSection: (pageId, payload) =>
+      request(`/cms/pages/${pageId}/sections`, { method: 'POST', body: payload }),
+    updateSection: (id, payload) => request(`/cms/sections/${id}`, { method: 'PATCH', body: payload }),
+    deleteSection: (id) => request(`/cms/sections/${id}`, { method: 'DELETE' }),
+    reorderSections: (pageId, items) =>
+      request(`/cms/pages/${pageId}/sections/reorder`, { method: 'POST', body: { items } }),
+    media: (params) => request('/cms/media', { params }),
+    uploadMedia: (payload) => request('/cms/media', { method: 'POST', body: payload }),
+    updateMedia: (id, payload) => request(`/cms/media/${id}`, { method: 'PATCH', body: payload }),
+    replaceMedia: (id, payload) => request(`/cms/media/${id}/replace`, { method: 'POST', body: payload }),
+    deleteMedia: (id) => request(`/cms/media/${id}`, { method: 'DELETE' }),
+    navigation: () => request('/cms/navigation'),
+    saveNavigation: (location, items) =>
+      request(`/cms/navigation/${location}`, { method: 'PUT', body: { items } }),
+    /** Private previews need the bearer token, so images are fetched as blobs. */
+    async previewUrl(path) {
+      if (!path) return '';
+      const token = readToken();
+      const base = BASE_URL.startsWith('http') ? new URL(BASE_URL).origin : window.location.origin;
+      const response = await fetch(`${base}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new ApiError('The image could not be loaded.', { code: 'MEDIA_PREVIEW_FAILED' });
+      return URL.createObjectURL(await response.blob());
+    },
+  },
+
   notifications: {
     list: () => request('/notifications'),
     markAllRead: () => request('/notifications/read-all', { method: 'POST' }),

@@ -74,6 +74,27 @@ export function ReservationDetailSheet({
 
   const copy = confirming ? CONFIRM_COPY[confirming] : null;
 
+  // One clear next step, secondary actions side by side, and the destructive
+  // ones kept apart so the footer reads as actions instead of a menu.
+  const canCheckIn = ['pending', 'confirmed'].includes(reservation.status);
+  const canEdit = ['pending', 'confirmed'].includes(reservation.status);
+  const primary =
+    reservation.status === 'pending'
+      ? { label: t('reservations.confirm'), icon: CheckCircle2, onClick: () => runStatus('confirmed') }
+      : canCheckIn
+        ? { label: t('reservations.checkIn'), icon: LogIn, onClick: () => setConfirming('checkedIn') }
+        : reservation.status === 'checkedIn'
+          ? { label: t('reservations.checkOut'), icon: LogOut, onClick: () => setConfirming('checkedOut') }
+          : null;
+  const secondary = [
+    canEdit
+      ? { key: 'edit', label: t('reservations.edit'), icon: Pencil, onClick: () => onEdit(reservation) }
+      : null,
+    reservation.status === 'pending'
+      ? { key: 'checkIn', label: t('reservations.checkIn'), icon: LogIn, onClick: () => setConfirming('checkedIn') }
+      : null,
+  ].filter(Boolean);
+
   return (
     <>
       <Sheet open={Boolean(reservation)} onOpenChange={onOpenChange}>
@@ -187,63 +208,55 @@ export function ReservationDetailSheet({
             ) : null}
           </div>
 
-          <div className="space-y-2 border-t border-border/70 px-5 py-4">
-            {['pending', 'confirmed'].includes(reservation.status) ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => onEdit(reservation)}
-              >
-                <Pencil className="size-3.5" />
-                {t('reservations.edit')}
+          <div className="border-t border-border/70 px-5 py-4">
+            {primary ? (
+              <Button className="w-full" onClick={primary.onClick}>
+                <primary.icon />
+                {primary.label}
               </Button>
             ) : null}
-            {reservation.status === 'pending' ? (
-              <Button size="sm" className="w-full justify-start" onClick={() => runStatus('confirmed')}>
-                <CheckCircle2 className="size-3.5" />
-                {t('reservations.confirm')}
-              </Button>
-            ) : null}
-            {['pending', 'confirmed'].includes(reservation.status) ? (
-              <Button
-                size="sm"
-                variant={reservation.status === 'pending' ? 'outline' : 'default'}
-                className="w-full justify-start"
-                onClick={() => setConfirming('checkedIn')}
-              >
-                <LogIn className="size-3.5" />
-                {t('reservations.checkIn')}
-              </Button>
-            ) : null}
-            {reservation.status === 'checkedIn' ? (
-              <Button size="sm" className="w-full justify-start" onClick={() => setConfirming('checkedOut')}>
-                <LogOut className="size-3.5" />
-                {t('reservations.checkOut')}
-              </Button>
-            ) : null}
-            {['pending', 'confirmed'].includes(reservation.status) ? (
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/70 pt-2.5">
-                <button
-                  type="button"
-                  onClick={() => setConfirming('noShow')}
-                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                >
-                  <UserX className="size-3.5 shrink-0" />
-                  {t('reservations.noShow')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirming('cancelled')}
-                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md py-1 text-[12px] font-medium text-destructive transition-colors hover:text-destructive/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                >
-                  <XCircle className="size-3.5 shrink-0" />
-                  {t('reservations.cancel')}
-                </button>
+
+            {secondary.length ? (
+              <div className={`flex gap-2${primary ? ' mt-2' : ''}`}>
+                {secondary.map((action) => (
+                  <Button
+                    key={action.key}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={action.onClick}
+                  >
+                    <action.icon />
+                    {action.label}
+                  </Button>
+                ))}
               </div>
             ) : null}
+
+            {['pending', 'confirmed'].includes(reservation.status) ? (
+              <div className="mt-3 flex items-center justify-center gap-1.5 border-t border-border/60 pt-2.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={() => setConfirming('noShow')}
+                >
+                  <UserX />
+                  {t('reservations.noShow')}
+                </Button>
+                <Button
+                  variant="destructive-ghost"
+                  size="sm"
+                  onClick={() => setConfirming('cancelled')}
+                >
+                  <XCircle />
+                  {t('reservations.cancel')}
+                </Button>
+              </div>
+            ) : null}
+
             {busy ? (
-              <p className="flex items-center justify-center gap-2 pt-1 text-[11.5px] text-muted-foreground">
+              <p className="mt-2 flex items-center justify-center gap-2 text-[11.5px] text-muted-foreground">
                 <Spinner /> {t('common.saving')}
               </p>
             ) : null}

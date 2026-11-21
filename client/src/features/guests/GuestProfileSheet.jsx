@@ -25,6 +25,9 @@ function Stat({ icon: Icon, label, value, tone }) {
 export function GuestProfileSheet({ guest, onOpenChange, onEdit, onSelectReservation }) {
   const { t } = useTranslation();
   const money = useMoney();
+  // The sheet opens with the row from the list while the full profile is still
+  // loading; the list row carries no stay history, so default it to empty.
+  const stays = guest?.reservations || [];
 
   if (!guest) return null;
 
@@ -105,11 +108,11 @@ export function GuestProfileSheet({ guest, onOpenChange, onEdit, onSelectReserva
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               {t('guests.history')}
             </p>
-            {guest.reservations.length === 0 ? (
+            {stays.length === 0 ? (
               <EmptyState compact icon={CalendarCheck} title={t('guests.noHistory')} description={t('guests.noHistoryBody')} />
             ) : (
               <div className="overflow-hidden rounded-lg border border-border">
-                {guest.reservations.slice(0, 8).map((reservation) => (
+                {stays.slice(0, 8).map((reservation) => (
                   <button
                     key={reservation.id}
                     type="button"

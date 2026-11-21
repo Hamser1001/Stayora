@@ -208,7 +208,10 @@ export function SettingsPage() {
       ) : null}
 
       <Tabs defaultValue="property" className="space-y-4">
-        <TabsList>
+        {/* Narrow screens show every section as an equal-width grid instead of
+            a scroller: the hidden scrollbar left Property and Notifications
+            unreachable on a phone. */}
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:h-9 sm:w-auto sm:gap-0.5">
           <TabsTrigger value="property">
             <Building2 /> {t('settings.tabs.property')}
           </TabsTrigger>
@@ -221,7 +224,7 @@ export function SettingsPage() {
           <TabsTrigger value="team">
             <Users /> {t('settings.tabs.team')}
           </TabsTrigger>
-          <TabsTrigger value="notifications">
+          <TabsTrigger value="notifications" className="col-span-2 sm:col-auto">
             <BellRing /> {t('settings.tabs.notifications')}
           </TabsTrigger>
         </TabsList>

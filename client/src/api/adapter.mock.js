@@ -1241,4 +1241,51 @@ mock.guests.options = async () =>
 mock.payments.listPage = async (params = {}) => mockPage(await mock.payments.list(params), params);
 mock.expenses.listPage = async (params = {}) => mockPage(await mock.expenses.list(params), params);
 
+/**
+ * The demo workspace has no server-side credential vault, so it reports the
+ * integration catalog as unavailable instead of pretending a channel is live.
+ */
+mock.integrations = {
+  list: async () => ({ groups: [], storage: { configured: false }, canManage: false }),
+};
+
+// The CMS is a server feature: content, permissions and media cannot be faked in
+// the browser without lying about what is saved. The demo adapter says so.
+const cmsUnavailable = async () => {
+  throw new ApiError('The website CMS needs the Stayora API. Start the server and set VITE_API_MODE=http.', {
+    code: 'CMS_REQUIRES_API',
+    status: 0,
+  });
+};
+
+mock.cms = {
+  overview: cmsUnavailable,
+  sectionTypes: cmsUnavailable,
+  site: cmsUnavailable,
+  updateSite: cmsUnavailable,
+  publishSite: cmsUnavailable,
+  unpublishSite: cmsUnavailable,
+  pages: cmsUnavailable,
+  page: cmsUnavailable,
+  createPage: cmsUnavailable,
+  updatePage: cmsUnavailable,
+  deletePage: cmsUnavailable,
+  publishPage: cmsUnavailable,
+  unpublishPage: cmsUnavailable,
+  reorderPages: cmsUnavailable,
+  sections: cmsUnavailable,
+  createSection: cmsUnavailable,
+  updateSection: cmsUnavailable,
+  deleteSection: cmsUnavailable,
+  reorderSections: cmsUnavailable,
+  media: cmsUnavailable,
+  uploadMedia: cmsUnavailable,
+  updateMedia: cmsUnavailable,
+  replaceMedia: cmsUnavailable,
+  deleteMedia: cmsUnavailable,
+  navigation: cmsUnavailable,
+  saveNavigation: cmsUnavailable,
+  previewUrl: cmsUnavailable,
+};
+
 export default mock;

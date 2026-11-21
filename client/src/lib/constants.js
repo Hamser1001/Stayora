@@ -42,6 +42,8 @@ export const MODULES = [
   'reports',
   'settings',
   'data',
+  'integrations',
+  'cms',
 ];
 
 /** Mirrors the server presets; explicit member permissions always win. */

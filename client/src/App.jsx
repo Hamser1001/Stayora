@@ -16,6 +16,8 @@ import { DataPage } from '@/pages/DataPage';
 import { ChangePasswordPage } from '@/pages/ChangePasswordPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { IntegrationsPage } from '@/pages/IntegrationsPage';
+import { CmsPage } from '@/pages/CmsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { LogoMark } from '@/components/brand/Logo';
 
@@ -89,6 +91,8 @@ export default function App() {
         <Route path="staff" element={<StaffPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="integrations" element={<IntegrationsPage />} />
+        <Route path="cms" element={<CmsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="data" element={<DataPage />} />
       </Route>

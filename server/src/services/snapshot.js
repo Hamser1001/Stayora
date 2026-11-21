@@ -158,6 +158,9 @@ const COUNTER_PREFIX = {
   staff: 'stf',
   notification: 'ntf',
   room: 'rom',
+  page: 'pg',
+  section: 'sec',
+  media: 'med',
 };
 
 async function initialiseCounter(key, model) {

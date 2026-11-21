@@ -1,0 +1,24 @@
+{
+  "name": "stayora-website",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Stayora public website — Moroccan Atlantic surf hospitality, Tamraght.",
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 4174 --strictPort",
+    "images": "node scripts/optimize-images.mjs"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.3",
+    "sharp": "^0.33.5",
+    "vite": "^5.4.11"
+  }
+}

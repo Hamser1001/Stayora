@@ -263,12 +263,12 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {/* Guest */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
               <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {t('reservations.form.guestSection')}
               </p>
               {!reservation ? (
-                <div className="inline-flex rounded-lg border border-border bg-muted/60 p-0.5">
+                <div className="inline-flex shrink-0 rounded-lg border border-border bg-muted/60 p-0.5">
                   {[
                     { key: 'existing', label: t('reservations.form.existingGuest'), icon: Users },
                     { key: 'new', label: t('reservations.form.newGuest'), icon: UserPlus },
@@ -282,13 +282,13 @@ export function ReservationFormDialog({ open, onOpenChange, reservation, onSaved
                           type="button"
                           onClick={() => field.onChange(option.key)}
                           className={cn(
-                            'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors',
+                            'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors',
                             field.value === option.key
                               ? 'bg-primary-soft text-primary'
                               : 'text-muted-foreground hover:text-foreground',
                           )}
                         >
-                          <option.icon className="size-3" />
+                          <option.icon className="size-3 shrink-0" />
                           {option.label}
                         </button>
                       )}

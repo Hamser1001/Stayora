@@ -13,6 +13,10 @@
     "loadtest": "node scripts/load-test.js",
     "audit:queries": "node scripts/audit-queries.js",
     "smoke": "node scripts/smoke.js",
+    "test:integrations": "node scripts/security-integrations.js",
+    "test:cms": "node scripts/security-cms.js",
+    "test:booking": "node scripts/test-booking.js",
+    "repair:derived": "node scripts/repair-derived-fields.js",
     "profile:analytics": "node scripts/profile-analytics.js"
   },
   "dependencies": {

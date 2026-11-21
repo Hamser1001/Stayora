@@ -10,6 +10,9 @@ import { paymentsRouter, expensesRouter } from './routes/finance.js';
 import { housekeepingRouter } from './routes/operations.js';
 import staffRouter from './routes/staff.js';
 import dataRouter from './routes/data.js';
+import integrationsRouter from './routes/integrations.js';
+import cmsRouter from './routes/cms.js';
+import publicRouter from './routes/public.js';
 import currencyRouter from './routes/currency.js';
 import {
   dashboardRouter,
@@ -44,7 +47,18 @@ export function createApp() {
     }),
   );
   // Excel imports and avatar uploads are sent as base64 in the JSON body.
-  app.use(express.json({ limit: '12mb' }));
+  // Inbound webhook payloads keep their exact bytes: the signature is computed
+  // over the raw body, never over a re-serialised object.
+  app.use(
+    express.json({
+      limit: '12mb',
+      verify: (req, res, buf) => {
+        if (req.originalUrl?.startsWith('/api/integrations/inbound/')) {
+          req.rawBody = buf.toString('utf8');
+        }
+      },
+    }),
+  );
 
   // Profile photos: random, immutable filenames served with strict nosniff.
   const uploadsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../uploads');
@@ -89,6 +103,10 @@ export function createApp() {
   app.use('/api/currency', currencyRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/data', dataRouter);
+  app.use('/api/integrations', integrationsRouter);
+  app.use('/api/cms', cmsRouter);
+  // Content the public website consumes: published pages and public media only.
+  app.use('/api/public', publicRouter);
 
   app.use(notFound);
   app.use(errorHandler);

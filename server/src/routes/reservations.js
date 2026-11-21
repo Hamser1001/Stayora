@@ -4,32 +4,14 @@ import { enrichReservationRows, reservationPage } from '../services/listing.js';
 import { paged } from '../services/paging.js';
 import { nextIdFor, reservationReference } from '../services/snapshot.js';
 import { enrichReservation } from '../services/selectors.js';
-import { addDays, nightsBetween, todayISO } from '../lib/dates.js';
+import { addDays, todayISO } from '../lib/dates.js';
 import { asyncHandler, fail } from '../middleware/error.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
-
-const CANCELLED = ['cancelled', 'noShow'];
+import { CANCELLED, findOverlap, occupiedBedIds, reservationTotal } from '../services/booking.js';
 
 const router = Router();
 
 router.use(requirePermission('reservations'));
-
-function reservationTotal({ rate, arrival, departure, discount = 0 }) {
-  return Math.max(0, nightsBetween(arrival, departure) * rate - discount);
-}
-
-/** Single indexed lookup instead of scanning every reservation of the workspace. */
-async function findOverlap({ bedId, arrival, departure, excludeId }) {
-  return models.Reservation.findOne({
-    bedId,
-    ...(excludeId ? { id: { $ne: excludeId } } : {}),
-    status: { $nin: CANCELLED },
-    arrival: { $lt: departure },
-    departure: { $gt: arrival },
-  })
-    .select({ id: 1 })
-    .lean();
-}
 
 async function reservationById(id) {
   const row = await models.Reservation.findOne({ id }).lean();
@@ -72,16 +54,12 @@ router.get(
     const { arrival, departure, roomId } = req.query;
     if (!arrival || !departure || departure <= arrival) return res.json({ data: [] });
 
-    const [occupiedBedIds, beds] = await Promise.all([
-      models.Reservation.distinct('bedId', {
-        status: { $nin: CANCELLED },
-        arrival: { $lt: departure },
-        departure: { $gt: arrival },
-      }),
+    const [takenBedIds, beds] = await Promise.all([
+      occupiedBedIds(arrival, departure),
       models.Bed.find(roomId ? { roomId } : { maintenance: false, outOfService: false }).lean(),
     ]);
 
-    const occupied = new Set(occupiedBedIds);
+    const occupied = new Set(takenBedIds);
     const available = beds.filter((bed) => !bed.maintenance && !bed.outOfService && !occupied.has(bed.id));
     const rooms = await models.Room.find({ id: { $in: [...new Set(available.map((bed) => bed.roomId))] } }).lean();
     const roomMap = new Map(rooms.map((room) => [room.id, room]));

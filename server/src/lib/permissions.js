@@ -11,6 +11,8 @@ export const MODULES = [
   'reports',
   'settings',
   'data',
+  'integrations',
+  'cms',
 ];
 
 export const ROLE_PERMISSIONS = {

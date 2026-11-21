@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 /** Every document uses the client's string id as its primary key. */
-const baseSchema = (definition, { collection, indexes = [] } = {}) => {
+export const baseSchema = (definition, { collection, indexes = [] } = {}) => {
   const schema = new Schema(
     {
       id: { type: String, required: true, unique: true, index: true },
@@ -244,6 +244,59 @@ const Setting = model(
   ),
 );
 
+/**
+ * One document per provider per workspace. `secrets` only ever holds AES-256-GCM
+ * envelopes ({ v, iv, tag, ct }) written by services/integrations/crypto.js;
+ * plaintext credentials are never persisted, logged or returned.
+ */
+const Integration = model(
+  'Integration',
+  baseSchema(
+    {
+      workspaceKey: { type: String, required: true, default: 'workspace' },
+      provider: { type: String, required: true },
+      status: { type: String, default: 'not_connected' },
+      enabled: { type: Boolean, default: false },
+      secrets: { type: Schema.Types.Mixed, default: () => ({}) },
+      secretFields: { type: [String], default: [] },
+      config: { type: Schema.Types.Mixed, default: () => ({}) },
+      credentialVersion: { type: Number, default: 0 },
+      lastRotatedAt: { type: String, default: null },
+      lastSyncAt: { type: String, default: null },
+      lastSyncResult: { type: Schema.Types.Mixed, default: null },
+      mappings: { type: [Schema.Types.Mixed], default: [] },
+      createdAt: { type: String, default: null },
+      updatedAt: { type: String, default: null },
+      updatedBy: { type: String, default: '' },
+    },
+    {
+      collection: 'integrations',
+      indexes: [[{ workspaceKey: 1, provider: 1 }, { unique: true }]],
+    },
+  ),
+);
+
+/** Dedupe ledger for inbound provider events (replay + idempotency protection). */
+const WebhookEvent = model(
+  'WebhookEvent',
+  baseSchema(
+    {
+      workspaceKey: { type: String, required: true, default: 'workspace' },
+      provider: { type: String, required: true },
+      dedupeKey: { type: String, required: true },
+      eventType: { type: String, default: '' },
+      receivedAt: { type: String, required: true },
+    },
+    {
+      collection: 'webhook_events',
+      indexes: [
+        [{ workspaceKey: 1, provider: 1, dedupeKey: 1 }, { unique: true }],
+        [{ receivedAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 }],
+      ],
+    },
+  ),
+);
+
 /** Monotonic counter used to allocate the next string id without scanning. */
 const Counter = model(
   'Counter',
@@ -269,4 +322,6 @@ export const models = {
   Setting,
   Counter,
   Activity,
+  Integration,
+  WebhookEvent,
 };
